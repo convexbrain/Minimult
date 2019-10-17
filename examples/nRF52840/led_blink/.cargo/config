@@ -1,0 +1,50 @@
+[build]
+target = "thumbv7em-none-eabihf"
+
+[target.thumbv6m-none-eabi]
+rustflags = [
+    "-C", "link-arg=kernel_asm/thumbv6m-none-eabi_kernel_asm.o",
+    "-C", "link-arg=-Tlink.x",
+    "-C", "link-arg=-Map=target/link.map",
+    "-C", "linker=C:/Program Files (x86)/GNU Tools ARM Embedded/8 2019-q3-update/bin/arm-none-eabi-ld",
+]
+
+[target.thumbv7m-none-eabi]
+rustflags = [
+    "-C", "link-arg=kernel_asm/thumbv7m-none-eabi_kernel_asm.o",
+    "-C", "link-arg=-Tlink.x",
+    "-C", "link-arg=-Map=target/link.map",
+    "-C", "linker=C:/Program Files (x86)/GNU Tools ARM Embedded/8 2019-q3-update/bin/arm-none-eabi-ld",
+]
+
+[target.thumbv7em-none-eabi]
+rustflags = [
+    "-C", "link-arg=kernel_asm/thumbv7em-none-eabi_kernel_asm.o",
+    "-C", "link-arg=-Tlink.x",
+    "-C", "link-arg=-Map=target/link.map",
+    "-C", "linker=C:/Program Files (x86)/GNU Tools ARM Embedded/8 2019-q3-update/bin/arm-none-eabi-ld",
+]
+
+[target.thumbv7em-none-eabihf]
+rustflags = [
+    "-C", "link-arg=kernel_asm/thumbv7em-none-eabihf_kernel_asm.o",
+    "-C", "link-arg=-Tlink.x",
+    "-C", "link-arg=-Map=target/link.map",
+    "-C", "linker=C:/Program Files (x86)/GNU Tools ARM Embedded/8 2019-q3-update/bin/arm-none-eabi-ld",
+]
+
+[target.thumbv8m.base-none-eabi]
+rustflags = [
+    "-C", "link-arg=kernel_asm/thumbv8m.base-none-eabi_kernel_asm.o",
+    "-C", "link-arg=-Tlink.x",
+    "-C", "link-arg=-Map=target/link.map",
+    "-C", "linker=C:/Program Files (x86)/GNU Tools ARM Embedded/8 2019-q3-update/bin/arm-none-eabi-ld",
+]
+
+[target.thumbv8m.main-none-eabi]
+rustflags = [
+    "-C", "link-arg=kernel_asm/thumbv8m.main-none-eabi_kernel_asm.o",
+    "-C", "link-arg=-Tlink.x",
+    "-C", "link-arg=-Map=target/link.map",
+    "-C", "linker=C:/Program Files (x86)/GNU Tools ARM Embedded/8 2019-q3-update/bin/arm-none-eabi-ld",
+]
