@@ -1,5 +1,5 @@
 # LLD requires that the section flags are explicitly set here
-.section .KernelAsm, "ax"
+.section .text.minimult_asm, "ax"
 .global PendSV
 .global ex_countup
 

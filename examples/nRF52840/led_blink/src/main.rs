@@ -28,9 +28,7 @@ use nrf52840_pac::{
     interrupt, Interrupt};
 
 
-pub mod minimult;
-use minimult::{Minimult, MTMsgSender, MTMsgReceiver};
-
+use minimult_cortex_m::*;
 
 
 struct Count(u32);

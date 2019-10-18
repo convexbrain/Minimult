@@ -11,11 +11,8 @@ cortex-m = "0.6.1"
 cortex-m-rt = "0.6.10"
 nrf52840-pac = "0.8.0"
 panic-semihosting = "0.5.3"
+minimult_cortex-m = {path = "../../../minimult_cortex-m"}
 
 [features]
 rt = ["nrf52840-pac/rt"]
 default = ["rt"]
-
-[dependencies.num-integer]
-version = "0.1.36"
-default-features = false

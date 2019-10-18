@@ -4,6 +4,25 @@ version = "0.1.0"
 authors = ["convexbrain <convexbrain@gmail.com>"]
 edition = "2018"
 
+description = "A minimal multitask library, or RTOS, for Cortex-M microcontrollers."
+
+#documentation = "..."
+homepage = "https://github.com/convexbrain/Minimult/tree/master/minimult_cortex-m"
+repository = "https://github.com/convexbrain/Minimult"
+
+readme = "README.md"
+
+keywords = ["multitask", "RTOS", "cortex-m", "dispatch", "message-queue"]
+
+categories = ["embedded", "no-std", "asynchronous"]
+
+license = "Unlicense"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+cortex-m = "0.6.1"
+
+[dependencies.num-integer]
+version = "0.1.36"
+default-features = false
