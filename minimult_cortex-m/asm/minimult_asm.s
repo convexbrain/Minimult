@@ -1,7 +1,7 @@
 # LLD requires that the section flags are explicitly set here
 .section .text.minimult_asm, "ax"
 .global PendSV
-.global ex_countup
+.global minimult_ex_cntup
 
 # .type and .thumb_func are both required; otherwise its Thumb bit does not
 # get set and an invalid vector table is generated
@@ -19,9 +19,9 @@ PendSV:
     mov     r4, lr
 
     mov     r0, sp
-    bl      save_sp
+    bl      minimult_save_sp
     mov     sp, r0
-    bl      task_switch
+    bl      minimult_task_switch
     mov     sp, r0
 
     mov     lr, r4
@@ -36,12 +36,12 @@ PendSV:
     bx      lr
 
 
-.type ex_countup,%function
+.type minimult_ex_cntup,%function
 .thumb_func
 
 .ifdef V6
 
-ex_countup:
+minimult_ex_cntup:
     cpsid   i
     ldr     r1, [r0]
     add     r1, #1
@@ -51,12 +51,12 @@ ex_countup:
 
 .else
 
-ex_countup:
+minimult_ex_cntup:
     ldrex   r1, [r0]
     add     r1, #1
     strex   r2, r1, [r0]
     cmp     r2, #0
-    bne     ex_countup
+    bne     minimult_ex_cntup
     bx      lr
 
 .endif
