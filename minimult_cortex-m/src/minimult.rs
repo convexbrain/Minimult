@@ -18,8 +18,11 @@ use core::mem::{MaybeUninit, size_of, align_of, transmute};
 use core::marker::PhantomData;
 
 
-type MTTaskId = u16;
-type MTTaskPri = u8;
+/// Task identifier
+pub type MTTaskId = u16;
+
+/// Task priority
+pub type MTTaskPri = u8;
 
 //
 
@@ -543,6 +546,7 @@ extern fn minimult_task_switch() -> *mut usize
 
 //
 
+/// Memory block used by `Minimult`
 pub struct MTMemBlk<B>(MaybeUninit<B>);
 
 impl<B> MTMemBlk<B>
@@ -669,6 +673,7 @@ impl<'a> MTAlloc<'a>
 
 //
 
+/// Multitasking API
 pub struct Minimult<'a>
 {
     alloc: MTAlloc<'a>
@@ -678,11 +683,19 @@ impl<'a> Minimult<'a>
 {
     // Main context
 
+    /// Reserves a memory block to be used by `Minimult` instance.
+    /// * Any type `B` specifies a size of the memory block. Typically use `[u8; N]` for `N` bytes.
+    /// * Returns the reserved memory block.
     pub const fn mem<B>() -> MTMemBlk<B>
     {
         MTMemBlk::new()
     }
 
+    /// Creates `Minimult` instance.
+    /// * `mem` - reserved memory block.
+    /// * `num_tasks` - number of tasks.
+    /// * Returns the created instance.
+    /// * (`num_tasks` * XXX) bytes of the memory block is consumed.
     pub fn new<B>(mem: &mut MTMemBlk<B>, num_tasks: MTTaskId) -> Minimult
     {
         let mut alloc = MTAlloc::new(mem);
@@ -696,6 +709,11 @@ impl<'a> Minimult<'a>
         }
     }
 
+    /// Creates a message queue.
+    /// * `M` - type of the message element.
+    /// * `len` - length of the message queue array.
+    /// * Returns the created message queue.
+    /// * (`len` * (size of `M` + XXX)) bytes of the memory block is consumed.
     pub fn msgq<M>(&mut self, len: usize) -> MTMsgQueue<'a, M> // TODO: lifetime is correct?
     {
         let mem = self.alloc.array(len);
@@ -703,6 +721,12 @@ impl<'a> Minimult<'a>
         MTMsgQueue::new(mem)
     }
 
+    /// Registers a closure as a task.
+    /// * `tid` - task identifier. `0` to `num_tasks - 1`.
+    /// * `pri` - task priority. The lower value is the higher priority.
+    /// * `stack_len` - length of a stack used by the task.
+    /// * `task: T` - task closure.
+    /// * (`stack_len` * size of `usize`) bytes of the memory block is consumed.
     pub fn register<T>(&mut self, tid: MTTaskId, pri: MTTaskPri, stack_len: usize, task: T)
     where T: FnOnce() + Send + 'a  // TODO: lifetime is correct?
     {
@@ -713,6 +737,8 @@ impl<'a> Minimult<'a>
         tm.register_once(tid, pri, stack, task);
     }
 
+    /// Runs into a loop to dispatch the registered tasks.
+    /// * Never returns.
     pub fn run(self) -> !
     {
         let control = cortex_m::register::control::read();
@@ -736,6 +762,7 @@ impl<'a> Minimult<'a>
 
     // Task and Interrupt context
 
+    /// Makes a service call to request dispatching.
     pub fn dispatch()
     {
         unsafe {
@@ -747,6 +774,7 @@ impl<'a> Minimult<'a>
         SCB::set_pendsv();
     }
 
+    /// Brings a current running task into an idle state.
     pub fn idle()
     {
         unsafe {
@@ -756,6 +784,8 @@ impl<'a> Minimult<'a>
         }
     }
 
+    /// Wakes up a task in an idle state.
+    /// * `tid` - task identifier. `0` to `num_tasks - 1`.
     pub fn kick(tid: MTTaskId)
     {
         unsafe {
@@ -783,6 +813,8 @@ impl<'a> Minimult<'a>
         }
     }
 
+    /// Gets task identifier of a current running task if any.
+    /// Returns task identifier in `Option`.
     pub fn curr_tid() -> Option<MTTaskId>
     {
         unsafe {
@@ -824,6 +856,7 @@ fn wrap_diff(x: usize, y: usize, bound: usize) -> usize
 
 //
 
+/// Message queue for task-to-task communication
 pub struct MTMsgQueue<'a, M>
 {
     mem: MTRawArray<Option<M>>,
@@ -848,6 +881,8 @@ impl<'a, M> MTMsgQueue<'a, M>
         }
     }
 
+    /// Gets sending and receving channels.
+    /// * Returns a tuple of the sender and receiver pair.
     pub fn ch<'q>(&'q mut self) -> (MTMsgSender<'a, 'q, M>, MTMsgReceiver<'a, 'q, M>)
     {
         (
@@ -865,6 +900,7 @@ impl<'a, M> MTMsgQueue<'a, M>
 
 //
 
+/// Message sending channel
 pub struct MTMsgSender<'a, 'q, M>
 {
     q: *mut MTMsgQueue<'a, M>,
@@ -875,6 +911,8 @@ unsafe impl<M: Send> Send for MTMsgSender<'_, '_, M> {}
 
 impl<M> MTMsgSender<'_, '_, M>
 {
+    /// Gets if there is a vacant message entry.
+    /// * Returns the number of vacant message entries.
     pub fn vacant(&self) -> usize
     {
         let q = unsafe { self.q.as_mut().unwrap() };
@@ -884,6 +922,9 @@ impl<M> MTMsgSender<'_, '_, M>
         wrap_diff(q.rd_idx, wrap_inc(q.wr_idx, q.mem.len()), q.mem.len())
     }
 
+    /// Sends a message.
+    /// * `msg` - the message to be sent.
+    /// * Blocks if there is no vacant message entry.
     pub fn send(&self, msg: M)
     {
         let q = unsafe { self.q.as_mut().unwrap() };
@@ -914,6 +955,7 @@ impl<M> MTMsgSender<'_, '_, M>
 
 //
 
+/// Message receiving channel
 pub struct MTMsgReceiver<'a, 'q, M>
 {
     q: *mut MTMsgQueue<'a, M>,
@@ -924,6 +966,8 @@ unsafe impl<M: Send> Send for MTMsgReceiver<'_, '_, M> {}
 
 impl<M> MTMsgReceiver<'_, '_, M>
 {
+    /// Gets if there is an available message entry.
+    /// * Returns the number of available message entries.
     pub fn available(&self) -> usize
     {
         let q = unsafe { self.q.as_mut().unwrap() };
@@ -933,6 +977,9 @@ impl<M> MTMsgReceiver<'_, '_, M>
         wrap_diff(q.wr_idx, q.rd_idx, q.mem.len())
     }
 
+    /// Receives a message.
+    /// * `f: F` - closure to refer the received message.
+    /// * Blocks if there is no available message entry.
     pub fn receive<F>(&self, f: F)
     where F: FnOnce(&M)
     {

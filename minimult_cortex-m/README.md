@@ -1,7 +1,8 @@
-/*!
+# minimult_cortex-m
+
 This crate for Rust provides a minimal multitask library `Minimult` for Cortex-M microcontrollers.
 
-# Target
+## Target
 
 **Single-core** systems of
 
@@ -14,7 +15,7 @@ This crate for Rust provides a minimal multitask library `Minimult` for Cortex-M
 
 `Minimult` is still in **beta** because the author had only a few tests only on Cortex-M4 with FPU.
 
-# Features
+## Features
 
 * Task like that of a typical RTOS
   * `Minimult` can take closures and register them as tasks.
@@ -32,10 +33,10 @@ This crate for Rust provides a minimal multitask library `Minimult` for Cortex-M
 * Static memory allocation
   * `Minimult` doesn't require a global allocator but reserves a bunch of memory block in advance.
 
-# Examples
-## Usage Outline
+## Examples
+### Usage Outline
 
-```no_run
+```rust
 #![no_main]
 #![no_std]
 
@@ -111,15 +112,7 @@ fn task1(rcv: MTMsgReceiver<u32>)
 }
 ```
 
-## Other Examples
+### Other Examples
 
 You can find a specific board's example [here](https://github.com/convexbrain/Minimult/tree/master/examples/).
 Currently there are very few examples, however.
-*/
-
-#![no_std]
-
-mod minimult;
-
-pub use crate::minimult::{Minimult, MTMsgSender, MTMsgReceiver};
-pub use crate::minimult::{MTTaskId, MTTaskPri, MTMemBlk, MTMsgQueue};
