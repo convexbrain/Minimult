@@ -695,7 +695,7 @@ impl<'a> Minimult<'a>
     /// * `mem` - reserved memory block.
     /// * `num_tasks` - number of tasks.
     /// * Returns the created instance.
-    /// * (`num_tasks` * XXX) bytes of the memory block is consumed.
+    /// * (`num_tasks` * (32 + 6)) bytes of the memory block is consumed.
     pub fn new<B>(mem: &mut MTMemBlk<B>, num_tasks: MTTaskId) -> Minimult
     {
         let mut alloc = MTAlloc::new(mem);
@@ -713,7 +713,7 @@ impl<'a> Minimult<'a>
     /// * `M` - type of the message element.
     /// * `len` - length of the message queue array.
     /// * Returns the created message queue.
-    /// * (`len` * (size of `M` + XXX)) bytes of the memory block is consumed.
+    /// * (`len` * (size of `Option<M>`)) bytes of the memory block is consumed.
     pub fn msgq<M>(&mut self, len: usize) -> MTMsgQueue<'a, M> // TODO: lifetime is correct?
     {
         let mem = self.alloc.array(len);
