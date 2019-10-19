@@ -6,8 +6,8 @@
  * F: method-level general closure
  * V: struct-level general variable
  * T: task closure
- * I: task identifier
- * P: task priority
+ * I: index
+ * K: key
  * M: message
  * B: memory block
  */
@@ -69,17 +69,17 @@ fn inf_loop() -> !
 
 //
 
-struct MTBHeapDList<I, P>
+struct MTBHeapDList<I, K>
 {
-    array: MTRawArray<Option<(I, P)>>,
+    array: MTRawArray<Option<(I, K)>>,
     n_bheap: I,
     n_flist: I
 }
 
-impl<I, P> MTBHeapDList<I, P>
-where I: num_integer::Integer + Into<usize> + Copy, P: Ord
+impl<I, K> MTBHeapDList<I, K>
+where I: num_integer::Integer + Into<usize> + Copy, K: Ord
 {
-    fn new(array: MTRawArray<Option<(I, P)>>) -> MTBHeapDList<I, P>
+    fn new(array: MTRawArray<Option<(I, K)>>) -> MTBHeapDList<I, K>
     {
         MTBHeapDList {
             array,
@@ -157,7 +157,7 @@ where I: num_integer::Integer + Into<usize> + Copy, P: Ord
         }
     }
 
-    fn add_bheap(&mut self, id: I, key: P)
+    fn add_bheap(&mut self, id: I, key: K)
     {
         // add flist tail
         let pos = self.n_bheap + self.n_flist;
@@ -573,8 +573,8 @@ struct MTRawArray<V>
 
 impl<V> MTRawArray<V>
 {
-    fn refer<A>(&self, i: A) -> &mut V
-    where A: Into<usize>
+    fn refer<I>(&self, i: I) -> &mut V
+    where I: Into<usize>
     {
         let i = i.into();
         assert!(i < self.len); // TODO: better message
@@ -585,8 +585,8 @@ impl<V> MTRawArray<V>
         unsafe { ptr.as_mut().unwrap() }
     }
 
-    fn write<A>(&self, i: A, v: V)
-    where A: Into<usize>
+    fn write<I>(&self, i: I, v: V)
+    where I: Into<usize>
     {
         let i = i.into();
         assert!(i < self.len); // TODO: better message
@@ -597,8 +597,8 @@ impl<V> MTRawArray<V>
         unsafe { ptr.write(v); }
     }
 
-    fn write_volatile<A>(&self, i: A, v: V)
-    where A: Into<usize>
+    fn write_volatile<I>(&self, i: I, v: V)
+    where I: Into<usize>
     {
         let i = i.into();
         assert!(i < self.len); // TODO: better message
