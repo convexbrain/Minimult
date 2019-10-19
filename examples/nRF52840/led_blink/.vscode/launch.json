@@ -22,6 +22,25 @@
 
             "runToMain": true,
             "armToolchainPath": "C:/Program Files (x86)/GNU Tools ARM Embedded/8 2019-q3-update/bin"
+        },
+        {
+            "type": "cortex-debug",
+            "request": "launch",
+            "name": "Release (Bumpy)",
+
+            "servertype": "bmp",
+            "cwd": "${workspaceRoot}",
+            "device": "nRF52840_xxAA",
+            "executable": "./target/thumbv7em-none-eabihf/release/led_blink",
+
+            "BMPGDBSerialPort": "COM3",
+            "interface": "swd",
+            "targetId": 1,
+
+            "svdFile": "../nRF5_SDK_15.3.0_59ac345/modules/nrfx/mdk/nrf52840.svd",
+
+            "runToMain": false,
+            "armToolchainPath": "C:/Program Files (x86)/GNU Tools ARM Embedded/8 2019-q3-update/bin"
         }
     ]
 }

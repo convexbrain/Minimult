@@ -1,6 +1,4 @@
 // UNDER DEVELOPMENT AND EXPERIMENT
-// TODO: check if stable toolchain is enough
-// TODO: check release build
 
 #![no_main]
 #![no_std]
