@@ -1,5 +1,3 @@
-// UNDER DEVELOPMENT AND EXPERIMENT
-
 #![no_main]
 #![no_std]
 
@@ -8,26 +6,15 @@ use cortex_m::peripheral::NVIC;
 
 use cortex_m_rt::entry;
 
-
 extern crate panic_semihosting;
-/*
-use core::panic::PanicInfo;
-#[panic_handler]
-fn panic(_info: &PanicInfo) -> ! {
-    loop {
-        asm::bkpt();
-    }
-}
-*/
-
 
 use nrf52840_pac::{
     P0, TIMER0,
     interrupt, Interrupt};
 
-
 use minimult_cortex_m::*;
 
+//
 
 struct Count(u32);
 
