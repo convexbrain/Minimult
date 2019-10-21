@@ -134,6 +134,6 @@ impl Drop for Minimult<'_>
 {
     fn drop(&mut self)
     {
-        panic!(); // TODO: better message
+        panic!("Minimult dropped without a run");
     }
 }

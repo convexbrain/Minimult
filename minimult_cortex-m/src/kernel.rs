@@ -201,7 +201,8 @@ impl MTKernel
     {
         let task = self.tasks.refer(tid);
 
-        assert_eq!(task.state, MTState::None); // TODO: better message
+        assert_eq!(task.state, MTState::None,
+                   "tid {}: double registration", tid);
 
         let sp_start = stack.head();
         let sp_end = stack.tail();
@@ -226,8 +227,8 @@ impl MTKernel
 
         let sp = setup_stack(sp, data, call_once, inf_loop);
 
-        assert!(sp >= sp_start); // TODO: better message
-        assert!(sp <= sp_end); // TODO: better message
+        assert!((sp >= sp_start) && (sp <= sp_end),
+                "tid {}: stack shortage");
 
         task.sp_start = sp_start;
         task.sp_end = sp_end;
@@ -263,8 +264,8 @@ impl MTKernel
         // check and save current sp
 
         if let Some(task) = self.task_current() {
-            assert!(curr_sp >= task.sp_start); // TODO: better message
-            assert!(curr_sp <= task.sp_end); // TODO: better message
+            assert!((curr_sp >= task.sp_start) && (curr_sp <= task.sp_end),
+                    "tid {}: stack shortage", self.tid.unwrap());
 
             task.sp = curr_sp;
         }
@@ -326,7 +327,7 @@ impl MTKernel
                         false
                     }
                 }
-                _ => panic!() // TODO: better message
+                _ => panic!()
             }
         });
 

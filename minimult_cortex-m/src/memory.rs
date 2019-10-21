@@ -48,7 +48,7 @@ impl<V> MTRawArray<V>
     where I: Into<usize>
     {
         let i = i.into();
-        assert!(i < self.len); // TODO: better message
+        assert!(i < self.len);
 
         let ptr = self.head;
         let ptr = unsafe { ptr.add(i) };
@@ -60,7 +60,7 @@ impl<V> MTRawArray<V>
     where I: Into<usize>
     {
         let i = i.into();
-        assert!(i < self.len); // TODO: better message
+        assert!(i < self.len);
 
         let ptr = self.head;
         let ptr = unsafe { ptr.add(i) };
@@ -72,7 +72,7 @@ impl<V> MTRawArray<V>
     where I: Into<usize>
     {
         let i = i.into();
-        assert!(i < self.len); // TODO: better message
+        assert!(i < self.len);
 
         let ptr = self.head;
         let ptr = unsafe { ptr.add(i) };
@@ -127,7 +127,8 @@ impl<'a> MTAlloc<'a>
         let p = align_up::<V>(self.cur_pos);
         let e = p + size;
 
-        assert!(e <= self.end_cap); // TODO: better message
+        assert!(e <= self.end_cap,
+                "{} bytes shortage of memory block", size);
 
         self.cur_pos = e;
 
