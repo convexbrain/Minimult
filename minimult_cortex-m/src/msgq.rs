@@ -37,7 +37,7 @@ pub struct MTMsgQueue<'a, M>
 
 impl<'a, M> MTMsgQueue<'a, M>
 {
-    pub(crate) fn new(mem: MTRawArray<Option<M>>) -> MTMsgQueue<'a, M> // TODO: lifetime is correct?
+    pub(crate) fn new(mem: MTRawArray<Option<M>>) -> MTMsgQueue<'a, M>
     {
         MTMsgQueue {
             mem,
