@@ -21,4 +21,7 @@ rm -f *.a
 "$AS" -march=armv8-m.main --defsym V8=1 minimult_asm.s -g -o thumbv8m.main-none-eabi_minimult_asm.o
 "$AR" crs thumbv8m.main-none-eabi_minimult_asm.a thumbv8m.main-none-eabi_minimult_asm.o
 
+"$AS" -march=armv8-m.main --defsym V8=1 minimult_asm.s -g -o thumbv8m.main-none-eabihf_minimult_asm.o
+"$AR" crs thumbv8m.main-none-eabihf_minimult_asm.a thumbv8m.main-none-eabihf_minimult_asm.o
+
 rm -f *.o

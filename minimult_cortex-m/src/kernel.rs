@@ -44,12 +44,23 @@ fn ex_cntup(exc: &mut usize)
 
 fn setup_stack(sp: *mut usize, data: *mut u8, call_once: usize, inf_loop: fn() -> !) -> *mut usize
 {
+    /*
+     * MAGIC NUMBERS: Exception entry behavior of ARM v6/7/8-M Architecture Reference Manual
+     */
+
     let sp = sp as usize;
     let sp = align_down::<u64>(sp); // 8-byte align
     let sp = sp as *mut usize;
 
     unsafe {
-        let sp = sp.sub(26/*registers*/ + 2/*margin*/); // TODO: target depend
+        let framesize = if cfg!(has_fpu) {
+            0x68 / 4
+        }
+        else {
+            0x20 / 4
+        };
+
+        let sp = sp.sub(framesize + 2/*margin*/);
 
         // r0
         sp.add(8 + 0).write_volatile(data as usize);
@@ -208,7 +219,10 @@ impl MTKernel
         }
 
         let vtbl = rfo.vtbl;
-        let call_once = unsafe { vtbl.add(3).read() }; // TODO: magic number
+        /* 
+         * MAGIC NUMBERS: rustc 1.38.0 (625451e37 2019-09-23) places call_once at vtbl[3].
+         */
+        let call_once = unsafe { vtbl.add(3).read() };
 
         let sp = setup_stack(sp, data, call_once, inf_loop);
 

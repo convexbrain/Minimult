@@ -8,10 +8,9 @@ This crate for Rust provides a minimal multitask library `Minimult` for Cortex-M
 
 * Cortex-M0 / M0+ / M1  (`thumbv6m-none-eabi`)
 * Cortex-M3  (`thumbv7m-none-eabi`)
-* Cortex-M4 / M7  (`thumbv7em-none-eabi`)
-* Cortex-M4 / M7 with FPU  (`thumbv7em-none-eabihf`)
+* Cortex-M4 / M7  (`thumbv7em-none-eabi`) with FPU  (`thumbv7em-none-eabihf`)
 * Cortex-M23  (`thumbv8m.base-none-eabi`)
-* Cortex-M33 / M35P  (`thumbv8m.main-none-eabi`)
+* Cortex-M33 / M35P  (`thumbv8m.main-none-eabi`) with FPU  (`thumbv8m.main-none-eabihf`)
 
 `Minimult` is still in **beta** because the author had only a few tests only on Cortex-M4 with FPU.
 

@@ -17,6 +17,9 @@ target = "thumbv7em-none-eabihf"
 # Cortex-M33 / M35P
 #target = "thumbv8m.main-none-eabi"
 
+# Cortex-M33 / M35P with FPU
+#target = "thumbv8m.main-none-eabihf"
+
 rustflags = [
     "-C", "link-arg=-Tlink.x",
     #"-C", "link-arg=-Map=target/link.map",
