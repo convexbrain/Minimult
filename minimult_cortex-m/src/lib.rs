@@ -122,6 +122,19 @@ Currently there are very few examples, however.
 #![no_std]
 
 mod minimult;
+mod memory;
+mod msgq;
 
-pub use crate::minimult::{Minimult, MTMsgSender, MTMsgReceiver};
-pub use crate::minimult::{MTTaskId, MTTaskPri, MTMemBlk, MTMsgQueue};
+pub use crate::minimult::{
+    Minimult,
+    MTTaskId, MTTaskPri
+};
+
+pub use crate::memory::{
+    MTMemBlk
+};
+
+pub use crate::msgq::{
+    MTMsgSender, MTMsgReceiver,
+    MTMsgQueue
+};

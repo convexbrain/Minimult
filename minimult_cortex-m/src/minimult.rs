@@ -14,9 +14,10 @@
 
 use cortex_m::peripheral::SCB;
 
-use core::mem::{MaybeUninit, size_of, align_of, transmute};
-use core::marker::PhantomData;
+use core::mem::{size_of, align_of, transmute};
 
+use crate::msgq::MTMsgQueue;
+use crate::memory::{MTMemBlk, MTAlloc, MTRawArray};
 
 /// Task identifier
 pub type MTTaskId = u16;
@@ -25,14 +26,6 @@ pub type MTTaskId = u16;
 pub type MTTaskPri = u8;
 
 //
-
-fn align_up<A>(x: usize) -> usize
-{
-    let align = align_of::<A>();
-    let y = (x + align - 1) / align;
-    let y = y * align;
-    y
-}
 
 fn align_down<A>(x: usize) -> usize
 {
@@ -546,133 +539,6 @@ extern fn minimult_task_switch() -> *mut usize
 
 //
 
-/// Memory block used by `Minimult`
-pub struct MTMemBlk<B>(MaybeUninit<B>);
-
-impl<B> MTMemBlk<B>
-{
-    const fn new() -> MTMemBlk<B>
-    {
-        MTMemBlk(MaybeUninit::<B>::uninit())
-    }
-
-    fn size(&self) -> usize
-    {
-        size_of::<B>()
-    }
-
-    fn head(&mut self) -> usize
-    {
-        self.0.as_mut_ptr() as usize
-    }
-}
-
-//
-
-struct MTRawArray<V>
-{
-    head: *mut V,
-    len: usize
-}
-
-impl<V> MTRawArray<V>
-{
-    fn refer<I>(&self, i: I) -> &mut V
-    where I: Into<usize>
-    {
-        let i = i.into();
-        assert!(i < self.len); // TODO: better message
-
-        let ptr = self.head;
-        let ptr = unsafe { ptr.add(i) };
-
-        unsafe { ptr.as_mut().unwrap() }
-    }
-
-    fn write<I>(&self, i: I, v: V)
-    where I: Into<usize>
-    {
-        let i = i.into();
-        assert!(i < self.len); // TODO: better message
-
-        let ptr = self.head;
-        let ptr = unsafe { ptr.add(i) };
-
-        unsafe { ptr.write(v); }
-    }
-
-    fn write_volatile<I>(&self, i: I, v: V)
-    where I: Into<usize>
-    {
-        let i = i.into();
-        assert!(i < self.len); // TODO: better message
-
-        let ptr = self.head;
-        let ptr = unsafe { ptr.add(i) };
-
-        unsafe { ptr.write_volatile(v); }
-    }
-
-    fn head(&self) -> *mut V
-    {
-        self.head
-    }
-
-    fn len(&self) -> usize
-    {
-        self.len
-    }
-
-    fn tail(&self) -> *mut V
-    {
-        let ptr = self.head;
-        let ptr = unsafe { ptr.add(self.len) };
-        ptr
-    }
-}
-
-//
-
-struct MTAlloc<'a>
-{
-    cur_pos: usize,
-    end_cap: usize,
-    phantom: PhantomData<&'a ()>
-}
-
-impl<'a> MTAlloc<'a>
-{
-    fn new<'b, B>(mem: &'b mut MTMemBlk<B>) -> MTAlloc<'b>
-    {
-        MTAlloc {
-            cur_pos: mem.head(),
-            end_cap: mem.head() + mem.size(),
-            phantom: PhantomData
-        }
-    }
-
-    fn array<V, A>(&mut self, len: A) -> MTRawArray<V>
-    where A: Into<usize>
-    {
-        let len = len.into();
-        let size = size_of::<V>() * len;
-
-        let p = align_up::<V>(self.cur_pos);
-        let e = p + size;
-
-        assert!(e <= self.end_cap); // TODO: better message
-
-        self.cur_pos = e;
-
-        MTRawArray {
-            head: p as *mut V,
-            len
-        }
-    }
-}
-
-//
-
 /// Multitasking API
 pub struct Minimult<'a>
 {
@@ -795,7 +661,7 @@ impl<'a> Minimult<'a>
         }
     }
 
-    fn wait()
+    pub(crate) fn wait()
     {
         unsafe {
             if let Some(tm) = O_TASKMGR.as_mut() {
@@ -804,7 +670,7 @@ impl<'a> Minimult<'a>
         }
     }
 
-    fn signal(tid: MTTaskId)
+    pub(crate) fn signal(tid: MTTaskId)
     {
         unsafe {
             if let Some(tm) = O_TASKMGR.as_mut() {
@@ -814,7 +680,7 @@ impl<'a> Minimult<'a>
     }
 
     /// Gets task identifier of a current running task if any.
-    /// Returns task identifier in `Option`.
+    /// * Returns task identifier in `Option`.
     pub fn curr_tid() -> Option<MTTaskId>
     {
         unsafe {
@@ -835,179 +701,3 @@ impl Drop for Minimult<'_>
         panic!(); // better message
     }
 }
-
-//
-
-fn wrap_inc(x: usize, bound: usize) -> usize
-{
-    let y = x + 1;
-    if y < bound {y} else {0}
-}
-
-fn wrap_diff(x: usize, y: usize, bound: usize) -> usize
-{
-    if x >= y {
-        x - y
-    }
-    else {
-        x + (bound - y)
-    }
-}
-
-//
-
-/// Message queue for task-to-task communication
-pub struct MTMsgQueue<'a, M>
-{
-    mem: MTRawArray<Option<M>>,
-    wr_idx: usize,
-    rd_idx: usize,
-    wr_tid: Option<MTTaskId>,
-    rd_tid: Option<MTTaskId>,
-    phantom: PhantomData<&'a ()>
-}
-
-impl<'a, M> MTMsgQueue<'a, M>
-{
-    fn new(mem: MTRawArray<Option<M>>) -> MTMsgQueue<'a, M> // TODO: lifetime is correct?
-    {
-        MTMsgQueue {
-            mem,
-            wr_idx: 0,
-            rd_idx: 0,
-            wr_tid: None,
-            rd_tid: None,
-            phantom: PhantomData
-        }
-    }
-
-    /// Gets sending and receving channels.
-    /// * Returns a tuple of the sender and receiver pair.
-    pub fn ch<'q>(&'q mut self) -> (MTMsgSender<'a, 'q, M>, MTMsgReceiver<'a, 'q, M>)
-    {
-        (
-            MTMsgSender {
-                q: self,
-                phantom: PhantomData
-            },
-            MTMsgReceiver {
-                q: self,
-                phantom: PhantomData
-            }
-        )
-    }
-}
-
-//
-
-/// Message sending channel
-pub struct MTMsgSender<'a, 'q, M>
-{
-    q: *mut MTMsgQueue<'a, M>,
-    phantom: PhantomData<&'q ()>
-}
-
-unsafe impl<M: Send> Send for MTMsgSender<'_, '_, M> {}
-
-impl<M> MTMsgSender<'_, '_, M>
-{
-    /// Gets if there is a vacant message entry.
-    /// * Returns the number of vacant message entries.
-    pub fn vacant(&self) -> usize
-    {
-        let q = unsafe { self.q.as_mut().unwrap() };
-
-        q.wr_tid = Minimult::curr_tid();
-
-        wrap_diff(q.rd_idx, wrap_inc(q.wr_idx, q.mem.len()), q.mem.len())
-    }
-
-    /// Sends a message.
-    /// * `msg` - the message to be sent.
-    /// * Blocks if there is no vacant message entry.
-    pub fn send(&self, msg: M)
-    {
-        let q = unsafe { self.q.as_mut().unwrap() };
-
-        q.wr_tid = Minimult::curr_tid();
-
-        let curr_wr_idx = q.wr_idx;
-        let next_wr_idx = wrap_inc(curr_wr_idx, q.mem.len());
-
-        loop {
-            if next_wr_idx == q.rd_idx {
-                Minimult::wait();
-            }
-            else {
-                break;
-            }
-        }
-
-        q.mem.write_volatile(curr_wr_idx, Some(msg));
-
-        q.wr_idx = next_wr_idx; // TODO: atomic access in case
-
-        if let Some(rd_tid) = q.rd_tid {
-            Minimult::signal(rd_tid);
-        }
-    }
-}
-
-//
-
-/// Message receiving channel
-pub struct MTMsgReceiver<'a, 'q, M>
-{
-    q: *mut MTMsgQueue<'a, M>,
-    phantom: PhantomData<&'q ()>
-}
-
-unsafe impl<M: Send> Send for MTMsgReceiver<'_, '_, M> {}
-
-impl<M> MTMsgReceiver<'_, '_, M>
-{
-    /// Gets if there is an available message entry.
-    /// * Returns the number of available message entries.
-    pub fn available(&self) -> usize
-    {
-        let q = unsafe { self.q.as_mut().unwrap() };
-
-        q.rd_tid = Minimult::curr_tid();
-
-        wrap_diff(q.wr_idx, q.rd_idx, q.mem.len())
-    }
-
-    /// Receives a message.
-    /// * `f: F` - closure to refer the received message.
-    /// * Blocks if there is no available message entry.
-    pub fn receive<F>(&self, f: F)
-    where F: FnOnce(&M)
-    {
-        let q = unsafe { self.q.as_mut().unwrap() };
-
-        q.rd_tid = Minimult::curr_tid();
-
-        let curr_rd_idx = q.rd_idx;
-        let next_rd_idx = wrap_inc(curr_rd_idx, q.mem.len());
-
-        loop {
-            if curr_rd_idx == q.wr_idx {
-                Minimult::wait();
-            }
-            else {
-                break;
-            }
-        }
-
-        let ptr = q.mem.refer(curr_rd_idx);
-
-        f(ptr.as_ref().unwrap());
-        ptr.take().unwrap();
-
-        q.rd_idx = next_rd_idx; // TODO: atomic access in case
-
-        if let Some(wr_tid) = q.wr_tid {
-            Minimult::signal(wr_tid);
-        }
-    }
-} 
