@@ -1,13 +1,13 @@
 # Minimult
 
+Minimal multitask library, or RTOS, for Cortex-M microcontrollers
+
 ## minimult_cortex-m/
 
-This crate for Rust provides a minimal multitask library `Minimult` for Cortex-M microcontrollers.
-
-Crate: https://crates.io/crates/minimult_cortex-m/
+Crate for Rust that provides `Minimult`: https://crates.io/crates/minimult_cortex-m/
 
 Documentation: https://docs.rs/minimult_cortex-m/
 
 ## examples/
 
-How to use Totsu `PDIPM` to solve various optimization problems.
+Specific board's examples of how to use `Minimult`
