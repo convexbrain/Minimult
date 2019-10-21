@@ -37,6 +37,8 @@ This crate for Rust provides a minimal multitask library `Minimult` for Cortex-M
 ### Usage Outline
 
 ```rust
+// Build-only example
+
 #![no_main]
 #![no_std]
 
