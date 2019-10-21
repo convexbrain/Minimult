@@ -133,10 +133,11 @@ Type parameter rule:
  * B: memory block
 */
 
-mod minimult; // Rust lifetime safety and high-level API wrapper
-mod kernel; // Rust low-level unsafe and lifetime-unbounded singleton
-mod memory; // static memory allocation
-mod msgq; // message queue
+mod minimult; // Lifetime safe and high-level API wrapper
+mod kernel;   // Low-level unsafe and lifetime unbounded singleton
+mod bheap;    // binary heap and list
+mod memory;   // static memory allocation
+mod msgq;     // message queue
 
 /// Task identifier
 pub type MTTaskId = u16;

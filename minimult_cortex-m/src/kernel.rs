@@ -3,6 +3,7 @@ use core::mem::{size_of, align_of, transmute};
 
 use crate::{MTTaskId, MTTaskPri};
 use crate::memory::MTRawArray;
+use crate::bheap::MTBHeapDList;
 
 //
 
@@ -28,6 +29,8 @@ extern fn minimult_task_switch(sp: *mut usize) -> *mut usize
     }
 }
 
+//
+
 extern "C" {
     fn minimult_ex_cntup(exc: &mut usize);
 }
@@ -36,6 +39,31 @@ fn ex_cntup(exc: &mut usize)
 {
     unsafe {
         minimult_ex_cntup(exc);
+    }
+}
+
+fn setup_stack(sp: *mut usize, data: *mut u8, call_once: usize, inf_loop: fn() -> !) -> *mut usize
+{
+    let sp = sp as usize;
+    let sp = align_down::<u64>(sp); // 8-byte align
+    let sp = sp as *mut usize;
+
+    unsafe {
+        let sp = sp.sub(26/*registers*/ + 2/*margin*/); // TODO: target depend
+
+        // r0
+        sp.add(8 + 0).write_volatile(data as usize);
+        
+        // lr
+        sp.add(8 + 5).write_volatile(inf_loop as usize);
+
+        // ReturnAddress
+        sp.add(8 + 6).write_volatile(call_once);
+
+        // xPSR: set T-bit since Cortex-M has only Thumb instructions
+        sp.add(8 + 7).write_volatile(0x01000000);
+
+        sp
     }
 }
 
@@ -84,183 +112,6 @@ fn inf_loop() -> !
 
 //
 
-struct MTBHeapDList<I, K>
-{
-    array: MTRawArray<Option<(I, K)>>,
-    n_bheap: I,
-    n_flist: I
-}
-
-impl<I, K> MTBHeapDList<I, K>
-where I: num_integer::Integer + Into<usize> + Copy, K: Ord
-{
-    fn new(array: MTRawArray<Option<(I, K)>>) -> MTBHeapDList<I, K>
-    {
-        MTBHeapDList {
-            array,
-            n_bheap: I::zero(),
-            n_flist: I::zero()
-        }
-    }
-
-    fn replace(&mut self, pos0: I, pos1: I)
-    {
-        if pos0 != pos1 {
-            let tmp0 = self.array.refer(pos0).take();
-            let tmp1 = self.array.refer(pos1).take();
-            self.array.write(pos0, tmp1);
-            self.array.write(pos1, tmp0);
-        }
-    }
-
-    fn up_bheap(&mut self)
-    {
-        let two = I::one() + I::one();
-
-        if self.n_bheap > I::zero() {
-            let mut pos = self.n_bheap - I::one();
-
-            while pos > I::zero() {
-                let parent = (pos - I::one()) / two;
-
-                let key_pos = &self.array.refer(pos).as_ref().unwrap().1;
-                let key_parent = &self.array.refer(parent).as_ref().unwrap().1;
-
-                if key_pos >= key_parent {
-                    break;
-                }
-
-                self.replace(pos, parent);
-                pos = parent;
-            }
-        }
-    }
-
-    fn down_bheap(&mut self)
-    {
-        let two = I::one() + I::one();
-
-        let mut pos = I::zero();
-
-        while pos < self.n_bheap / two {
-            let child0 = (pos * two) + I::one();
-            let child1 = (pos * two) + two;
-
-            let key_pos = &self.array.refer(pos).as_ref().unwrap().1;
-            let key_child0 = &self.array.refer(child0).as_ref().unwrap().1;
-
-            let (child, key_child) = if child1 < self.n_bheap {
-                let key_child1 = &self.array.refer(child1).as_ref().unwrap().1;
-
-                if key_child0 <= key_child1 {
-                    (child0, key_child0)
-                }
-                else {
-                    (child1, key_child1)
-                }
-            }
-            else {
-                (child0, key_child0)
-            };
-
-            if key_pos < key_child {
-                break;
-            }
-
-            self.replace(pos, child);
-            pos = child;
-        }
-    }
-
-    fn add_bheap(&mut self, id: I, key: K)
-    {
-        // add flist tail
-        let pos = self.n_bheap + self.n_flist;
-        self.array.write(pos, Some((id, key)));
-        self.n_flist = self.n_flist + I::one();
-
-        // flist tail => bheap
-        self.flist_to_bheap(pos);
-    }
-
-    fn flist_to_bheap(&mut self, pos: I)
-    {
-        assert!(pos >= self.n_bheap);
-        assert!(pos < self.n_bheap + self.n_flist);
-
-        // replace flist pos <=> flist head
-        self.replace(pos, self.n_bheap);
-
-        // flist head <=> bheap tail
-        self.n_flist = self.n_flist - I::one();
-        self.n_bheap = self.n_bheap + I::one();
-
-        self.up_bheap();
-    }
-
-    fn bheap_h_to_flist_h(&mut self)
-    {
-        assert!(self.n_bheap > I::zero());
-        
-        // replace bheap head <=> bheap tail
-        let pos1 = self.n_bheap - I::one();
-        self.replace(I::zero(), pos1);
-
-        // bheap tail <=> flist head
-        self.n_flist = self.n_flist + I::one();
-        self.n_bheap = self.n_bheap - I::one();
-
-        self.down_bheap();
-    }
-
-    fn round_bheap_h(&mut self)
-    {
-        self.bheap_h_to_flist_h();
-
-        self.flist_to_bheap(self.n_bheap);
-    }
-
-    fn remove_bheap_h(&mut self)
-    {
-        self.bheap_h_to_flist_h();
-
-        // replace flist head <=> flist tail
-        let pos1 = self.n_bheap + self.n_flist - I::one();
-        self.replace(self.n_bheap, pos1);
-
-        // remove flist tail
-        self.array.write(pos1, None);
-        self.n_flist = self.n_flist - I::one();
-    }
-
-    fn bheap_h(&self) -> Option<I>
-    {
-        if self.n_bheap > I::zero() {
-            Some(self.array.refer(I::zero()).as_ref().unwrap().0)
-        }
-        else {
-            None
-        }
-    }
-
-    fn flist_scan<F>(&mut self, to_bheap: F)
-    where F: Fn(I) -> bool
-    {
-        let pos_b = self.n_bheap;
-        let pos_e = pos_b + self.n_flist;
-
-        let mut pos = pos_b;
-        while pos < pos_e {
-            if to_bheap(self.array.refer(pos).as_ref().unwrap().0) {
-                self.flist_to_bheap(pos);
-            }
-            pos = pos + I::one();
-        }
-    }
-}
-
-//
-
 #[derive(Clone, Copy, PartialEq, Debug)]
 enum MTState
 {
@@ -269,6 +120,8 @@ enum MTState
     Ready,
     Waiting
 }
+
+//
 
 pub(crate) struct MTTask
 {
@@ -283,6 +136,12 @@ pub(crate) struct MTTask
     state: MTState
 }
 
+struct RefFnOnce
+{
+    data: *const u8,
+    vtbl: *const usize
+}
+
 //
 
 pub(crate) struct MTKernel
@@ -293,12 +152,6 @@ pub(crate) struct MTKernel
     is_set: bool,
     sp_loops: *mut usize,
     tid: Option<MTTaskId>
-}
-
-struct RefFnOnce
-{
-    data: *const u8,
-    vtbl: *const usize
 }
 
 impl MTKernel
@@ -332,25 +185,6 @@ impl MTKernel
         }
     }
 
-    fn setup_task_once(sp: *mut usize, data: *mut u8, call_once: usize)
-    {
-        // TODO: magic number
-
-        unsafe {
-            // r0
-            sp.add(8 + 0).write_volatile(data as usize);
-            
-            // lr
-            sp.add(8 + 5).write_volatile(inf_loop as usize);
-
-            // ReturnAddress
-            sp.add(8 + 6).write_volatile(call_once);
-
-            // xPSR: set T-bit since Cortex-M has only Thumb instructions
-            sp.add(8 + 7).write_volatile(0x01000000);
-        }
-    }
-
     pub(crate) fn register_once<T>(&mut self, tid: MTTaskId, pri: MTTaskPri, stack: MTRawArray<usize>, t: T)
     where T: FnOnce() + Send // unsafe lifetime
     {
@@ -366,11 +200,9 @@ impl MTKernel
 
         let sp = sp_end as usize;
         let sp = align_down::<T>(sp - sz);
-        let data = sp as *mut u8;
-        let sp = align_down::<u64>(sp); // 8-byte align
         let sp = sp as *mut usize;
-        let sp = unsafe { sp.sub(26 + 2/*margin*/) }; // TODO: magic number
 
+        let data = sp as *mut u8;
         unsafe {
             core::intrinsics::copy(rfo.data, data, sz)
         }
@@ -378,7 +210,7 @@ impl MTKernel
         let vtbl = rfo.vtbl;
         let call_once = unsafe { vtbl.add(3).read() }; // TODO: magic number
 
-        MTKernel::setup_task_once(sp, data, call_once);
+        let sp = setup_stack(sp, data, call_once, inf_loop);
 
         assert!(sp >= sp_start); // TODO: better message
         assert!(sp <= sp_end); // TODO: better message
@@ -451,6 +283,7 @@ impl MTKernel
                 _  => {}
             }
         }
+
         // scan to check if Idle/Wait to Ready
 
         let tasks = &self.tasks;
