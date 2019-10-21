@@ -121,13 +121,31 @@ Currently there are very few examples, however.
 
 #![no_std]
 
-mod minimult;
-mod memory;
-mod msgq;
+/*
+Type parameter rule:
+ * A: method-level general variable
+ * F: method-level general closure
+ * V: struct-level general variable
+ * T: task closure
+ * I: index
+ * K: key
+ * M: message
+ * B: memory block
+*/
+
+mod minimult; // Rust lifetime safety and high-level API wrapper
+mod kernel; // Rust low-level unsafe and lifetime-unbounded singleton
+mod memory; // static memory allocation
+mod msgq; // message queue
+
+/// Task identifier
+pub type MTTaskId = u16;
+
+/// Task priority
+pub type MTTaskPri = u8;
 
 pub use crate::minimult::{
-    Minimult,
-    MTTaskId, MTTaskPri
+    Minimult
 };
 
 pub use crate::memory::{

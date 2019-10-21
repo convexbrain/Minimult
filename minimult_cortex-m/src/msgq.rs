@@ -1,6 +1,7 @@
 use core::marker::PhantomData;
 
-use crate::minimult::{Minimult, MTTaskId};
+use crate::MTTaskId;
+use crate::minimult::Minimult;
 use crate::memory::MTRawArray;
 
 //
