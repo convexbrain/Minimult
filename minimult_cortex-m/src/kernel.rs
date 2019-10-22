@@ -34,6 +34,8 @@ extern fn minimult_task_switch(sp: *mut usize) -> *mut usize
 extern "C" {
     fn minimult_ex_incr(exc: &mut usize);
     fn minimult_ex_decr(exc: &mut usize);
+    fn minimult_ex_incr_ifgt0(exc: &mut usize) -> usize;
+    fn minimult_ex_decr_if1(exc: &mut usize) -> usize;
 }
 
 fn setup_stack(sp: *mut usize, data: *mut u8, call_once: usize, inf_loop: fn() -> !) -> *mut usize
@@ -128,9 +130,10 @@ enum MTState
 pub(crate) enum MTEventCond
 {
     None,
+    Equal(usize),
     NotEqual(usize),
     LessThan(usize),
-    MoreThan(usize)
+    GreaterThan(usize)
 }
 
 pub(crate) struct MTEvent
@@ -166,11 +169,28 @@ impl MTEvent
         }
     }
 
+    pub(crate) fn incr_ifgt0(&mut self) -> bool
+    {
+        unsafe {
+            minimult_ex_incr_ifgt0(&mut self.ex_cnt) > 0 // NOTE: wrapping-around not checked
+        }
+    }
+
+    pub(crate) fn decr_if1(&mut self) -> bool
+    {
+        unsafe {
+            minimult_ex_decr_if1(&mut self.ex_cnt) > 0 // NOTE: wrapping-around not checked
+        }
+    }
+
     fn cond_matched(&self, cond: &MTEventCond) -> bool
     {
         match cond {
             MTEventCond::None => {
                 panic!()
+            }
+            MTEventCond::Equal(target) => {
+                self.cnt() == *target
             }
             MTEventCond::NotEqual(target) => {
                 self.cnt() != *target
@@ -178,7 +198,7 @@ impl MTEvent
             MTEventCond::LessThan(target) => {
                 self.cnt() < *target
             }
-            MTEventCond::MoreThan(target) => {
+            MTEventCond::GreaterThan(target) => {
                 self.cnt() > *target
             }
         }

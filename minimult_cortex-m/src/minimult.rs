@@ -1,5 +1,6 @@
 use crate::{MTTaskId, MTTaskPri};
 use crate::msgqueue::MTMsgQueue;
+use crate::shared::MTShared;
 use crate::memory::{MTMemBlk, MTAlloc};
 use crate::kernel::{mtkernel_create, mtkernel_get_ref, mtkernel_get_mut, MTEvent, MTEventCond};
 
@@ -47,6 +48,14 @@ impl<'a> Minimult<'a>
         let mem = self.alloc.array(len);
 
         MTMsgQueue::new(mem)
+    }
+
+    /// Creates a shared variable.
+    /// * `m: M` - the variable to be shared.
+    /// * Returns the created shared variable.
+    pub fn share<M>(&mut self, m: M) -> MTShared<M>
+    {
+        MTShared::new(m)
     }
 
     /// Registers a closure as a task.

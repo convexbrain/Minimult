@@ -138,7 +138,7 @@ impl<M> MTMsgReceiver<'_, '_, M>
                 break;
             }
 
-            Minimult::wait(&q.msg_cnt, MTEventCond::MoreThan(0));
+            Minimult::wait(&q.msg_cnt, MTEventCond::GreaterThan(0));
         }
 
         let curr_rd_idx = q.rd_idx;

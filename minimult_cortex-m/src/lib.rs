@@ -137,6 +137,7 @@ mod kernel;   // Low-level unsafe and lifetime unbounded singleton
 mod bheap;    // binary heap and list
 mod memory;   // static memory allocation
 mod msgqueue; // message queue
+mod shared;   // read-write shared variable
 
 /// Task identifier
 pub type MTTaskId = u16;
@@ -155,4 +156,9 @@ pub use crate::memory::{
 pub use crate::msgqueue::{
     MTMsgSender, MTMsgReceiver,
     MTMsgQueue
+};
+
+pub use crate::shared::{
+    MTSharedCh,
+    MTShared
 };
