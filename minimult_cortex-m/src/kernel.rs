@@ -33,6 +33,8 @@ extern fn minimult_task_switch(sp: *mut usize) -> *mut usize
 
 extern "C" {
     fn minimult_ex_cntup(exc: &mut usize);
+    fn minimult_ex_incr(exc: &mut isize);
+    fn minimult_ex_decr(exc: &mut isize);
 }
 
 fn ex_cntup(exc: &mut usize)
@@ -132,6 +134,63 @@ enum MTState
     Waiting
 }
 
+enum MTEventCond
+{
+    None,
+    NotEqual(isize)
+}
+
+struct MTEvent
+{
+    ex_cnt: isize,
+    cond: MTEventCond
+}
+
+impl MTEvent
+{
+    fn new() -> MTEvent
+    {
+        MTEvent {
+            ex_cnt: 0,
+            cond: MTEventCond::None
+        }
+    }
+
+    fn cnt(&self) -> isize
+    {
+        self.ex_cnt
+    }
+
+    fn incr(&mut self)
+    {
+        unsafe {
+            minimult_ex_incr(&mut self.ex_cnt); // NOTE: wrapping-around not checked
+        }
+    }
+
+    fn decr(&mut self)
+    {
+        unsafe {
+            minimult_ex_decr(&mut self.ex_cnt); // NOTE: wrapping-around not checked
+        }
+    }
+
+    fn set_cond(&mut self, cond: MTEventCond)
+    {
+        self.cond = cond;
+    }
+
+    fn cond_matched(&self) -> bool
+    {
+        match self.cond {
+            MTEventCond::None => false,
+            MTEventCond::NotEqual(target) => {
+                self.ex_cnt != target
+            }
+        }
+    }
+}
+
 //
 
 pub(crate) struct MTTask
@@ -140,11 +199,12 @@ pub(crate) struct MTTask
     sp_end: *mut usize,
     //
     sp: *mut usize,
-    kick_excnt: usize,
-    wakeup_cnt: usize,
     signal_excnt: usize,
     wait_cnt: usize,
-    state: MTState
+    state: MTState,
+    wait_ev: *const MTEvent,
+    //
+    idle_kick_ev: MTEvent
 }
 
 struct RefFnOnce
@@ -177,11 +237,11 @@ impl MTKernel
                     sp_start: core::ptr::null_mut(),
                     sp_end: core::ptr::null_mut(),
                     sp: core::ptr::null_mut(),
-                    kick_excnt: 0,
-                    wakeup_cnt: 0,
                     signal_excnt: 0,
                     wait_cnt: 0,
-                    state: MTState::None
+                    state: MTState::None,
+                    wait_ev: core::ptr::null_mut(),
+                    idle_kick_ev: MTEvent::new()
                 }
             );
             task_tree_array.write(i, None);
@@ -308,8 +368,9 @@ impl MTKernel
 
             match task.state {
                 MTState::Idle => {
-                    if task.kick_excnt != task.wakeup_cnt {
-                        task.wakeup_cnt = task.wakeup_cnt.wrapping_add(1);
+                    let ev = unsafe { task.wait_ev.as_ref().unwrap() };
+                    
+                    if ev.cond_matched() {
                         task.state = MTState::Ready;
                         true
                     }
@@ -369,11 +430,21 @@ impl MTKernel
 
     pub(crate) fn idle(&mut self)
     {
-        let task = self.task_current().unwrap();
+        loop {
+            let task = self.task_current().unwrap();
 
-        task.state = MTState::Idle; // NOTE: atomic access might be necessary
-        
-        self.dispatch();
+            if task.idle_kick_ev.cnt() != 0 {
+                task.idle_kick_ev.decr();
+                break;
+            }
+
+            task.idle_kick_ev.set_cond(MTEventCond::NotEqual(0));
+            
+            task.wait_ev = &task.idle_kick_ev;
+            task.state = MTState::Idle; // NOTE: atomic access might be necessary
+            
+            self.dispatch();
+        }
     }
 
     pub(crate) fn wait(&mut self)
@@ -417,7 +488,7 @@ impl MTKernel
     {
         let task = self.tasks.refer(tid);
 
-        ex_cntup(&mut task.kick_excnt);
+        task.idle_kick_ev.incr();
 
         self.dispatch();
     }
