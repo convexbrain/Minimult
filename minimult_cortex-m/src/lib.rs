@@ -7,10 +7,9 @@ This crate for Rust provides a minimal multitask library `Minimult` for Cortex-M
 
 * Cortex-M0 / M0+ / M1  (`thumbv6m-none-eabi`)
 * Cortex-M3  (`thumbv7m-none-eabi`)
-* Cortex-M4 / M7  (`thumbv7em-none-eabi`)
-* Cortex-M4 / M7 with FPU  (`thumbv7em-none-eabihf`)
+* Cortex-M4 / M7  (`thumbv7em-none-eabi`) with FPU  (`thumbv7em-none-eabihf`)
 * Cortex-M23  (`thumbv8m.base-none-eabi`)
-* Cortex-M33 / M35P  (`thumbv8m.main-none-eabi`)
+* Cortex-M33 / M35P  (`thumbv8m.main-none-eabi`) with FPU  (`thumbv8m.main-none-eabihf`)
 
 `Minimult` is still in **beta** because the author had only a few tests only on Cortex-M4 with FPU.
 
@@ -25,6 +24,8 @@ This crate for Rust provides a minimal multitask library `Minimult` for Cortex-M
     * A task goes into an idle state and other tasks/interrupts wake it up by kicking.
   * `MTMsgSender` and `MTMsgReceiver`
     * Task-to-task communication by message passing.
+  * `MTSharedCh`
+    * Shared variable among tasks.
 * Priority-based dispatching
   * A higher priority task preempts lower priority tasks.
   * Round-robin dispatching within the same priority tasks.
@@ -36,6 +37,8 @@ This crate for Rust provides a minimal multitask library `Minimult` for Cortex-M
 ## Usage Outline
 
 ```no_run
+// Build-only example
+
 #![no_main]
 #![no_std]
 
@@ -84,7 +87,7 @@ fn SysTick()
     Minimult::kick(0/*tid*/);
 }
 
-fn task0(snd: MTMsgSender<u32>)
+fn task0(mut snd: MTMsgSender<u32>)
 {
     // other codes...
 
@@ -98,7 +101,7 @@ fn task0(snd: MTMsgSender<u32>)
     }
 }
 
-fn task1(rcv: MTMsgReceiver<u32>)
+fn task1(mut rcv: MTMsgReceiver<u32>)
 {
     // other codes...
 
@@ -119,7 +122,45 @@ Currently there are very few examples, however.
 
 #![no_std]
 
-mod minimult;
+/*
+Type parameter rule:
+ * A: method-level general variable
+ * F: method-level general closure
+ * V: struct-level general variable
+ * T: task closure
+ * I: index
+ * K: key
+ * M: message
+ * B: memory block
+*/
 
-pub use crate::minimult::{Minimult, MTMsgSender, MTMsgReceiver};
-pub use crate::minimult::{MTTaskId, MTTaskPri, MTMemBlk, MTMsgQueue};
+mod minimult; // Lifetime safe and high-level API wrapper
+mod kernel;   // Low-level unsafe and lifetime unbounded singleton
+mod bheap;    // binary heap and list
+mod memory;   // static memory allocation
+mod msgqueue; // message queue
+mod shared;   // read-write shared variable
+
+/// Task identifier
+pub type MTTaskId = u16;
+
+/// Task priority
+pub type MTTaskPri = u8;
+
+pub use crate::minimult::{
+    Minimult
+};
+
+pub use crate::memory::{
+    MTMemBlk
+};
+
+pub use crate::msgqueue::{
+    MTMsgSender, MTMsgReceiver,
+    MTMsgQueue
+};
+
+pub use crate::shared::{
+    MTSharedCh,
+    MTShared
+};

@@ -1,6 +1,6 @@
 [package]
 name = "minimult_cortex-m"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["convexbrain <convexbrain@gmail.com>"]
 edition = "2018"
 
@@ -12,7 +12,7 @@ repository = "https://github.com/convexbrain/Minimult"
 
 readme = "README.md"
 
-keywords = ["multitask", "RTOS", "cortex-m", "dispatch", "message-queue"]
+keywords = ["multitask", "RTOS", "cortex-m"]
 
 categories = ["embedded", "no-std", "asynchronous"]
 

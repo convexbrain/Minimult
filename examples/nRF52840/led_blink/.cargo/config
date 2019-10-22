@@ -1,21 +1,6 @@
 [build]
-# Cortex-M0 / M0+ / M1
-#target = "thumbv6m-none-eabi"
-
-# Cortex-M3
-#target = "thumbv7m-none-eabi"
-
-# Cortex-M4 / M7
-#target = "thumbv7em-none-eabi"
-
 # Cortex-M4 / M7 with FPU
 target = "thumbv7em-none-eabihf"
-
-# Cortex-M23
-#target = "thumbv8m.base-none-eabi"
-
-# Cortex-M33 / M35P
-#target = "thumbv8m.main-none-eabi"
 
 rustflags = [
     "-C", "link-arg=-Tlink.x",
