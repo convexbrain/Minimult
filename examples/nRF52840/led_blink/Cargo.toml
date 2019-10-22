@@ -16,3 +16,8 @@ minimult_cortex-m = {path = "../../../minimult_cortex-m"}
 [features]
 rt = ["nrf52840-pac/rt"]
 default = ["rt"]
+
+[profile.dev]
+opt-level = 1      # controls the `--opt-level` the compiler builds with.
+                   # 0-1 is good for debugging. 2 is well-optimized. Max is 3.
+                   # 's' attempts to reduce size, 'z' reduces size even more.
