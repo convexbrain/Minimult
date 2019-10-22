@@ -1,5 +1,5 @@
 use crate::{MTTaskId, MTTaskPri};
-use crate::msgq::MTMsgQueue;
+use crate::msgqueue::MTMsgQueue;
 use crate::memory::{MTMemBlk, MTAlloc};
 use crate::kernel::{mtkernel_create, mtkernel_get_ref, mtkernel_get_mut};
 
@@ -42,7 +42,7 @@ impl<'a> Minimult<'a>
     /// * `len` - length of the message queue array.
     /// * Returns the created message queue.
     /// * (`len` * (size of `Option<M>`)) bytes of the memory block is consumed.
-    pub fn msgq<M>(&mut self, len: usize) -> MTMsgQueue<'a, M>
+    pub fn msgq<M>(&mut self, len: usize) -> MTMsgQueue<'a, M> // NOTE: lifetime safety correctness
     {
         let mem = self.alloc.array(len);
 
@@ -56,7 +56,7 @@ impl<'a> Minimult<'a>
     /// * `task: T` - task closure.
     /// * (`stack_len` * size of `usize`) bytes of the memory block is consumed.
     pub fn register<T>(&mut self, tid: MTTaskId, pri: MTTaskPri, stack_len: usize, task: T)
-    where T: FnOnce() + Send + 'a
+    where T: FnOnce() + Send + 'a // NOTE: lifetime safety correctness
     {
         let tm = mtkernel_get_mut().unwrap();
 

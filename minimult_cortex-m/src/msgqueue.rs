@@ -37,7 +37,7 @@ pub struct MTMsgQueue<'a, M>
 
 impl<'a, M> MTMsgQueue<'a, M>
 {
-    pub(crate) fn new(mem: MTRawArray<Option<M>>) -> MTMsgQueue<'a, M>
+    pub(crate) fn new(mem: MTRawArray<Option<M>>) -> MTMsgQueue<'a, M> // NOTE: lifetime safety correctness
     {
         MTMsgQueue {
             mem,
@@ -93,7 +93,7 @@ impl<M> MTMsgSender<'_, '_, M>
     /// Sends a message.
     /// * `msg` - the message to be sent.
     /// * Blocks if there is no vacant message entry.
-    pub fn send(&self, msg: M)
+    pub fn send(&mut self, msg: M)
     {
         let q = unsafe { self.q.as_mut().unwrap() };
 
@@ -113,7 +113,7 @@ impl<M> MTMsgSender<'_, '_, M>
 
         q.mem.write_volatile(curr_wr_idx, Some(msg));
 
-        q.wr_idx = next_wr_idx; // TODO: atomic access in case
+        q.wr_idx = next_wr_idx; // NOTE: atomic access might be necessary
 
         if let Some(rd_tid) = q.rd_tid {
             Minimult::signal(rd_tid);
@@ -148,7 +148,7 @@ impl<M> MTMsgReceiver<'_, '_, M>
     /// Receives a message.
     /// * `f: F` - closure to refer the received message.
     /// * Blocks if there is no available message entry.
-    pub fn receive<F>(&self, f: F)
+    pub fn receive<F>(&mut self, f: F)
     where F: FnOnce(&M)
     {
         let q = unsafe { self.q.as_mut().unwrap() };
@@ -172,7 +172,7 @@ impl<M> MTMsgReceiver<'_, '_, M>
         f(ptr.as_ref().unwrap());
         ptr.take().unwrap();
 
-        q.rd_idx = next_rd_idx; // TODO: atomic access in case
+        q.rd_idx = next_rd_idx; // NOTE: atomic access might be necessary
 
         if let Some(wr_tid) = q.wr_tid {
             Minimult::signal(wr_tid);

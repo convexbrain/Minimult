@@ -45,7 +45,7 @@ fn ex_cntup(exc: &mut usize)
 fn setup_stack(sp: *mut usize, data: *mut u8, call_once: usize, inf_loop: fn() -> !) -> *mut usize
 {
     /*
-     * MAGIC NUMBERS: Exception entry behavior of ARM v6/7/8-M Architecture Reference Manual
+     * Magic numbers from exception entry behavior of ARM v6/7/8-M Architecture Reference Manual
      */
 
     let sp = sp as usize;
@@ -197,7 +197,7 @@ impl MTKernel
     }
 
     pub(crate) fn register_once<T>(&mut self, tid: MTTaskId, pri: MTTaskPri, stack: MTRawArray<usize>, t: T)
-    where T: FnOnce() + Send // unsafe lifetime
+    where T: FnOnce() + Send // NOTE: unsafe lifetime
     {
         let task = self.tasks.refer(tid);
 
@@ -221,7 +221,7 @@ impl MTKernel
 
         let vtbl = rfo.vtbl;
         /* 
-         * MAGIC NUMBERS: rustc 1.38.0 (625451e37 2019-09-23) places call_once at vtbl[3].
+         * NOTE: rustc 1.38.0 (625451e37 2019-09-23) places call_once at vtbl[3].
          */
         let call_once = unsafe { vtbl.add(3).read() };
 
@@ -362,7 +362,7 @@ impl MTKernel
     {
         let task = self.task_current().unwrap();
 
-        task.state = MTState::None; // TODO: atomic access in case
+        task.state = MTState::None; // NOTE: atomic access might be necessary
         
         self.dispatch();
     }
@@ -371,7 +371,7 @@ impl MTKernel
     {
         let task = self.task_current().unwrap();
 
-        task.state = MTState::Idle; // TODO: atomic access in case
+        task.state = MTState::Idle; // NOTE: atomic access might be necessary
         
         self.dispatch();
     }
@@ -380,7 +380,7 @@ impl MTKernel
     {
         let task = self.task_current().unwrap();
 
-        task.state = MTState::Waiting; // TODO: atomic access in case
+        task.state = MTState::Waiting; // NOTE: atomic access might be necessary
         
         self.dispatch();
     }

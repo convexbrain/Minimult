@@ -48,7 +48,7 @@ fn SysTick()
     Minimult::kick(0/*tid*/);
 }
 
-fn task0(snd: MTMsgSender<u32>)
+fn task0(mut snd: MTMsgSender<u32>)
 {
     // other codes...
 
@@ -62,7 +62,7 @@ fn task0(snd: MTMsgSender<u32>)
     }
 }
 
-fn task1(rcv: MTMsgReceiver<u32>)
+fn task1(mut rcv: MTMsgReceiver<u32>)
 {
     // other codes...
 

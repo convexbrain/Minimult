@@ -85,7 +85,7 @@ fn SysTick()
     Minimult::kick(0/*tid*/);
 }
 
-fn task0(snd: MTMsgSender<u32>)
+fn task0(mut snd: MTMsgSender<u32>)
 {
     // other codes...
 
@@ -99,7 +99,7 @@ fn task0(snd: MTMsgSender<u32>)
     }
 }
 
-fn task1(rcv: MTMsgReceiver<u32>)
+fn task1(mut rcv: MTMsgReceiver<u32>)
 {
     // other codes...
 
@@ -136,7 +136,7 @@ mod minimult; // Lifetime safe and high-level API wrapper
 mod kernel;   // Low-level unsafe and lifetime unbounded singleton
 mod bheap;    // binary heap and list
 mod memory;   // static memory allocation
-mod msgq;     // message queue
+mod msgqueue; // message queue
 
 /// Task identifier
 pub type MTTaskId = u16;
@@ -152,7 +152,7 @@ pub use crate::memory::{
     MTMemBlk
 };
 
-pub use crate::msgq::{
+pub use crate::msgqueue::{
     MTMsgSender, MTMsgReceiver,
     MTMsgQueue
 };
