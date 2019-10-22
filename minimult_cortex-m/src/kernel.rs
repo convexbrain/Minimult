@@ -135,17 +135,15 @@ pub(crate) enum MTEventCond
 
 pub(crate) struct MTEvent
 {
-    ex_cnt: usize,
-    cond: MTEventCond
+    ex_cnt: usize
 }
 
 impl MTEvent
 {
-    pub(crate) fn new() -> MTEvent
+    pub(crate) fn new(init_cnt: usize) -> MTEvent
     {
         MTEvent {
-            ex_cnt: 0,
-            cond: MTEventCond::None
+            ex_cnt: init_cnt
         }
     }
 
@@ -168,23 +166,20 @@ impl MTEvent
         }
     }
 
-    pub(crate) fn set_cond(&mut self, cond: MTEventCond)
+    fn cond_matched(&self, cond: &MTEventCond) -> bool
     {
-        self.cond = cond;
-    }
-
-    fn cond_matched(&self) -> bool
-    {
-        match self.cond {
-            MTEventCond::None => false,
+        match cond {
+            MTEventCond::None => {
+                panic!()
+            }
             MTEventCond::NotEqual(target) => {
-                self.ex_cnt != target
+                self.cnt() != *target
             }
             MTEventCond::LessThan(target) => {
-                self.ex_cnt < target
+                self.cnt() < *target
             }
             MTEventCond::MoreThan(target) => {
-                self.ex_cnt > target
+                self.cnt() > *target
             }
         }
     }
@@ -200,6 +195,7 @@ pub(crate) struct MTTask
     sp: *mut usize,
     state: MTState,
     wait_ev: *const MTEvent,
+    wait_evcond: MTEventCond,
     //
     idle_kick_ev: MTEvent
 }
@@ -236,7 +232,8 @@ impl MTKernel
                     sp: core::ptr::null_mut(),
                     state: MTState::None,
                     wait_ev: core::ptr::null_mut(),
-                    idle_kick_ev: MTEvent::new()
+                    wait_evcond: MTEventCond::None,
+                    idle_kick_ev: MTEvent::new(0)
                 }
             );
             task_tree_array.write(i, None);
@@ -362,7 +359,7 @@ impl MTKernel
                 MTState::Waiting => {
                     let ev = unsafe { task.wait_ev.as_ref().unwrap() };
                     
-                    if ev.cond_matched() {
+                    if ev.cond_matched(&task.wait_evcond) {
                         task.state = MTState::Ready;
                         true
                     }
@@ -420,20 +417,20 @@ impl MTKernel
                 break;
             }
 
-            task.idle_kick_ev.set_cond(MTEventCond::NotEqual(0));
-            
             task.wait_ev = &task.idle_kick_ev;
+            task.wait_evcond = MTEventCond::NotEqual(0);
             task.state = MTState::Waiting; // NOTE: atomic access might be necessary
             
             self.dispatch();
         }
     }
 
-    pub(crate) fn wait(&mut self, ev: &MTEvent)
+    pub(crate) fn wait(&mut self, ev: &MTEvent, evcond: MTEventCond)
     {
         let task = self.task_current().unwrap();
 
         task.wait_ev = ev;
+        task.wait_evcond = evcond;
         task.state = MTState::Waiting; // NOTE: atomic access might be necessary
         
         self.dispatch();

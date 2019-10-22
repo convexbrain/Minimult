@@ -32,7 +32,7 @@ impl<'a, M> MTMsgQueue<'a, M>
             mem,
             wr_idx: 0,
             rd_idx: 0,
-            msg_cnt: MTEvent::new(),
+            msg_cnt: MTEvent::new(0),
             phantom: PhantomData
         }
     }
@@ -88,8 +88,7 @@ impl<M> MTMsgSender<'_, '_, M>
                 break;
             }
 
-            q.msg_cnt.set_cond(MTEventCond::LessThan(q.mem.len()));
-            Minimult::wait(&q.msg_cnt);
+            Minimult::wait(&q.msg_cnt, MTEventCond::LessThan(q.mem.len()));
         }
 
         let curr_wr_idx = q.wr_idx;
@@ -139,8 +138,7 @@ impl<M> MTMsgReceiver<'_, '_, M>
                 break;
             }
 
-            q.msg_cnt.set_cond(MTEventCond::MoreThan(0));
-            Minimult::wait(&q.msg_cnt);
+            Minimult::wait(&q.msg_cnt, MTEventCond::MoreThan(0));
         }
 
         let curr_rd_idx = q.rd_idx;
