@@ -24,6 +24,8 @@ This crate for Rust provides a minimal multitask library `Minimult` for Cortex-M
     * A task goes into an idle state and other tasks/interrupts wake it up by kicking.
   * `MTMsgSender` and `MTMsgReceiver`
     * Task-to-task communication by message passing.
+  * `MTSharedCh`
+    * Shared variable among tasks.
 * Priority-based dispatching
   * A higher priority task preempts lower priority tasks.
   * Round-robin dispatching within the same priority tasks.
