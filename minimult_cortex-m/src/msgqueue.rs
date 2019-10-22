@@ -73,7 +73,7 @@ impl<M> MTMsgSender<'_, '_, M>
     {
         let q = unsafe { self.q.as_mut().unwrap() };
 
-        q.mem.len() - (q.msg_cnt.cnt() as usize)
+        q.mem.len() - q.msg_cnt.cnt()
     }
 
     /// Sends a message.
@@ -84,11 +84,11 @@ impl<M> MTMsgSender<'_, '_, M>
         let q = unsafe { self.q.as_mut().unwrap() };
 
         loop {
-            if (q.msg_cnt.cnt() as usize) < q.mem.len() {
+            if q.msg_cnt.cnt() < q.mem.len() {
                 break;
             }
 
-            q.msg_cnt.set_cond(MTEventCond::LessThan(q.mem.len() as isize));
+            q.msg_cnt.set_cond(MTEventCond::LessThan(q.mem.len()));
             Minimult::wait(&q.msg_cnt);
         }
 
@@ -123,7 +123,7 @@ impl<M> MTMsgReceiver<'_, '_, M>
     {
         let q = unsafe { self.q.as_mut().unwrap() };
 
-        q.msg_cnt.cnt() as usize
+        q.msg_cnt.cnt()
     }
 
     /// Receives a message.

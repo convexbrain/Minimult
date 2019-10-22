@@ -32,8 +32,8 @@ extern fn minimult_task_switch(sp: *mut usize) -> *mut usize
 //
 
 extern "C" {
-    fn minimult_ex_incr(exc: &mut isize);
-    fn minimult_ex_decr(exc: &mut isize);
+    fn minimult_ex_incr(exc: &mut usize);
+    fn minimult_ex_decr(exc: &mut usize);
 }
 
 fn setup_stack(sp: *mut usize, data: *mut u8, call_once: usize, inf_loop: fn() -> !) -> *mut usize
@@ -128,14 +128,14 @@ enum MTState
 pub(crate) enum MTEventCond
 {
     None,
-    NotEqual(isize),
-    LessThan(isize),
-    MoreThan(isize)
+    NotEqual(usize),
+    LessThan(usize),
+    MoreThan(usize)
 }
 
 pub(crate) struct MTEvent
 {
-    ex_cnt: isize,
+    ex_cnt: usize,
     cond: MTEventCond
 }
 
@@ -149,7 +149,7 @@ impl MTEvent
         }
     }
 
-    pub(crate) fn cnt(&self) -> isize
+    pub(crate) fn cnt(&self) -> usize
     {
         self.ex_cnt
     }
