@@ -117,11 +117,10 @@ fn inf_loop() -> !
 
 //
 
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(PartialEq, Debug)]
 enum MTState
 {
     None,
-    Idle,
     Ready,
     Waiting
 }
@@ -345,9 +344,6 @@ impl MTKernel
                 MTState::None => {
                     self.task_tree.remove_bheap_h();
                 }
-                MTState::Idle => {
-                    self.task_tree.bheap_h_to_flist_h();
-                }
                 MTState::Waiting => {
                     self.task_tree.bheap_h_to_flist_h();
                 }
@@ -363,17 +359,6 @@ impl MTKernel
             let task = tasks.refer(tid);
 
             match task.state {
-                MTState::Idle => {
-                    let ev = unsafe { task.wait_ev.as_ref().unwrap() };
-                    
-                    if ev.cond_matched() {
-                        task.state = MTState::Ready;
-                        true
-                    }
-                    else {
-                        false
-                    }
-                }
                 MTState::Waiting => {
                     let ev = unsafe { task.wait_ev.as_ref().unwrap() };
                     
@@ -438,7 +423,7 @@ impl MTKernel
             task.idle_kick_ev.set_cond(MTEventCond::NotEqual(0));
             
             task.wait_ev = &task.idle_kick_ev;
-            task.state = MTState::Idle; // NOTE: atomic access might be necessary
+            task.state = MTState::Waiting; // NOTE: atomic access might be necessary
             
             self.dispatch();
         }
@@ -483,8 +468,8 @@ impl MTKernel
         let task = self.tasks.refer(tid);
 
         task.idle_kick_ev.incr();
-
-        self.dispatch();
+        
+        self.dispatch(); // NOTE: room of optimization using ev
     }
 
     pub(crate) fn curr_tid(&self) -> Option<MTTaskId>
