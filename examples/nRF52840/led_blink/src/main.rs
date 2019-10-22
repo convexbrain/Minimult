@@ -57,19 +57,29 @@ fn main() -> ! {
 
     // ----- ----- ----- ----- -----
 
-    let mut q = mt.msgq::<u32>(4);
-    let (snd, rcv) = q.ch();
-
     let v1 = Count(4);
     let v2 = Count(16);
 
-    mt.register(0, 1, 256, || led_cnt(timer0, snd, &v1, &v2));
+    /* using message queue
+     */
+    let mut q = mt.msgq::<u32>(4);
+    let (snd, rcv) = q.ch();
+    mt.register(0, 1, 256, || _led_cnt1(timer0, snd, &v1, &v2));
     mt.register(1, 1, 256, || _led_tgl1(p0, rcv)); // blink and pause
-    //mt.register(1, 1, 256, || _led_tgl2(p0, rcv)); // keep blinking
+
+    /* using shared variable
+    let sv = mt.share(1_u32);
+    let sc0 = sv.ch();
+    let sc1 = sv.ch();
+    mt.register(0, 1, 256, || _led_cnt2(timer0, sc0, &v1, &v2));
+    mt.register(1, 1, 256, || _led_tgl2(p0, sc1)); // keep blinking
+     */
 
     //core::mem::drop(q); // must be error
     //core::mem::drop(v1); // must be error
     //core::mem::drop(mem); // must be error
+    //core::mem::drop(sv); // must be error
+    //core::mem::drop(sc0); // must be error
     
     // ----- ----- ----- ----- -----
 
@@ -96,15 +106,13 @@ fn _led_tgl1(p0: P0, mut rcv: MTMsgReceiver<u32>)
     }
 }
 
-fn _led_tgl2(p0: P0, mut rcv: MTMsgReceiver<u32>)
+fn _led_tgl2(p0: P0, sv: MTSharedCh<u32>)
 {
     let cnt_half = 64_000_000 / 4;
     let mut div = 1;
 
     loop {
-        while rcv.available() > 0 {
-            rcv.receive(|v| {div = *v});
-        }
+        sv.look(|v| {div = *v});
 
         p0.outset.write(|w| w.pin7().set_bit());
 
@@ -116,7 +124,7 @@ fn _led_tgl2(p0: P0, mut rcv: MTMsgReceiver<u32>)
     }
 }
 
-fn led_cnt(timer0: TIMER0, mut snd: MTMsgSender<u32>, cnt_1: &Count, cnt_2: &Count)
+fn _led_cnt1(timer0: TIMER0, mut snd: MTMsgSender<u32>, cnt_1: &Count, cnt_2: &Count)
 {
     let mut flag = true;
 
@@ -132,6 +140,26 @@ fn led_cnt(timer0: TIMER0, mut snd: MTMsgSender<u32>, cnt_1: &Count, cnt_2: &Cou
         //
 
         snd.send(if flag {cnt_1.0} else {cnt_2.0});
+        flag = !flag;
+    }
+}
+
+fn _led_cnt2(timer0: TIMER0, sc: MTSharedCh<u32>, cnt_1: &Count, cnt_2: &Count)
+{
+    let mut flag = true;
+
+    loop {
+        Minimult::idle();
+
+        //
+
+        timer0.events_compare[0].write(|w| {w.events_compare().bit(false)});
+        NVIC::unpend(Interrupt::TIMER0);
+        unsafe { NVIC::unmask(Interrupt::TIMER0) }
+
+        //
+
+        sc.touch(|v| {*v = if flag {cnt_1.0} else {cnt_2.0}});
         flag = !flag;
     }
 }

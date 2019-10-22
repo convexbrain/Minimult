@@ -53,7 +53,7 @@ impl<'a> Minimult<'a>
     /// Creates a shared variable.
     /// * `m: M` - the variable to be shared.
     /// * Returns the created shared variable.
-    pub fn share<M>(&mut self, m: M) -> MTShared<M>
+    pub fn share<M>(&mut self, m: M) -> MTShared<'a, M> // NOTE: lifetime safety correctness
     {
         MTShared::new(m)
     }
