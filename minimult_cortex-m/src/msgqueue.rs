@@ -1,8 +1,8 @@
 use core::marker::PhantomData;
 
-use crate::MTTaskId;
 use crate::minimult::Minimult;
 use crate::memory::MTRawArray;
+use crate::kernel::{MTEvent, MTEventCond};
 
 //
 
@@ -10,16 +10,6 @@ fn wrap_inc(x: usize, bound: usize) -> usize
 {
     let y = x + 1;
     if y < bound {y} else {0}
-}
-
-fn wrap_diff(x: usize, y: usize, bound: usize) -> usize
-{
-    if x >= y {
-        x - y
-    }
-    else {
-        x + (bound - y)
-    }
 }
 
 //
@@ -30,8 +20,7 @@ pub struct MTMsgQueue<'a, M>
     mem: MTRawArray<Option<M>>,
     wr_idx: usize,
     rd_idx: usize,
-    wr_tid: Option<MTTaskId>,
-    rd_tid: Option<MTTaskId>,
+    msg_cnt: MTEvent,
     phantom: PhantomData<&'a ()>
 }
 
@@ -43,8 +32,7 @@ impl<'a, M> MTMsgQueue<'a, M>
             mem,
             wr_idx: 0,
             rd_idx: 0,
-            wr_tid: None,
-            rd_tid: None,
+            msg_cnt: MTEvent::new(),
             phantom: PhantomData
         }
     }
@@ -85,9 +73,7 @@ impl<M> MTMsgSender<'_, '_, M>
     {
         let q = unsafe { self.q.as_mut().unwrap() };
 
-        q.wr_tid = Minimult::curr_tid();
-
-        wrap_diff(q.rd_idx, wrap_inc(q.wr_idx, q.mem.len()), q.mem.len())
+        q.mem.len() - (q.msg_cnt.cnt() as usize)
     }
 
     /// Sends a message.
@@ -97,27 +83,24 @@ impl<M> MTMsgSender<'_, '_, M>
     {
         let q = unsafe { self.q.as_mut().unwrap() };
 
-        q.wr_tid = Minimult::curr_tid();
+        loop {
+            if (q.msg_cnt.cnt() as usize) < q.mem.len() {
+                break;
+            }
+
+            q.msg_cnt.set_cond(MTEventCond::LessThan(q.mem.len() as isize));
+            Minimult::wait(&q.msg_cnt);
+        }
 
         let curr_wr_idx = q.wr_idx;
         let next_wr_idx = wrap_inc(curr_wr_idx, q.mem.len());
-
-        loop {
-            if next_wr_idx == q.rd_idx {
-                Minimult::wait();
-            }
-            else {
-                break;
-            }
-        }
 
         q.mem.write_volatile(curr_wr_idx, Some(msg));
 
         q.wr_idx = next_wr_idx; // NOTE: atomic access might be necessary
 
-        if let Some(rd_tid) = q.rd_tid {
-            Minimult::signal(rd_tid);
-        }
+        q.msg_cnt.incr();
+        Minimult::signal(&q.msg_cnt);
     }
 }
 
@@ -140,9 +123,7 @@ impl<M> MTMsgReceiver<'_, '_, M>
     {
         let q = unsafe { self.q.as_mut().unwrap() };
 
-        q.rd_tid = Minimult::curr_tid();
-
-        wrap_diff(q.wr_idx, q.rd_idx, q.mem.len())
+        q.msg_cnt.cnt() as usize
     }
 
     /// Receives a message.
@@ -153,19 +134,17 @@ impl<M> MTMsgReceiver<'_, '_, M>
     {
         let q = unsafe { self.q.as_mut().unwrap() };
 
-        q.rd_tid = Minimult::curr_tid();
+        loop {
+            if q.msg_cnt.cnt() > 0 {
+                break;
+            }
+
+            q.msg_cnt.set_cond(MTEventCond::MoreThan(0));
+            Minimult::wait(&q.msg_cnt);
+        }
 
         let curr_rd_idx = q.rd_idx;
         let next_rd_idx = wrap_inc(curr_rd_idx, q.mem.len());
-
-        loop {
-            if curr_rd_idx == q.wr_idx {
-                Minimult::wait();
-            }
-            else {
-                break;
-            }
-        }
 
         let ptr = q.mem.refer(curr_rd_idx);
 
@@ -174,8 +153,7 @@ impl<M> MTMsgReceiver<'_, '_, M>
 
         q.rd_idx = next_rd_idx; // NOTE: atomic access might be necessary
 
-        if let Some(wr_tid) = q.wr_tid {
-            Minimult::signal(wr_tid);
-        }
+        q.msg_cnt.decr();
+        Minimult::signal(&q.msg_cnt);
     }
 } 

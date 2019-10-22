@@ -1,7 +1,7 @@
 use crate::{MTTaskId, MTTaskPri};
 use crate::msgqueue::MTMsgQueue;
 use crate::memory::{MTMemBlk, MTAlloc};
-use crate::kernel::{mtkernel_create, mtkernel_get_ref, mtkernel_get_mut};
+use crate::kernel::{mtkernel_create, mtkernel_get_ref, mtkernel_get_mut, MTEvent};
 
 /// Multitasking API
 pub struct Minimult<'a>
@@ -84,17 +84,17 @@ impl<'a> Minimult<'a>
         }
     }
 
-    pub(crate) fn wait()
+    pub(crate) fn wait(ev: &MTEvent)
     {
         if let Some(tm) = mtkernel_get_mut() {
-            tm.wait();
+            tm.wait(ev);
         }
     }
 
-    pub(crate) fn signal(tid: MTTaskId)
+    pub(crate) fn signal(ev: &MTEvent)
     {
         if let Some(tm) = mtkernel_get_mut() {
-            tm.signal(tid);
+            tm.signal(ev);
         }
     }
 

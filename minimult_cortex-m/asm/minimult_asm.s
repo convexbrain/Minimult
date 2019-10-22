@@ -36,34 +36,6 @@ PendSV:
 
 #####
 
-.global minimult_ex_cntup
-.type minimult_ex_cntup,%function
-.thumb_func
-
-.ifdef V6
-
-minimult_ex_cntup:
-    cpsid   i
-    ldr     r1, [r0]
-    add     r1, #1
-    str     r1, [r0]
-    cpsie   i
-    bx      lr
-
-.else
-
-minimult_ex_cntup:
-    ldrex   r1, [r0]
-    add     r1, #1
-    strex   r2, r1, [r0]
-    cmp     r2, #0
-    bne     minimult_ex_cntup
-    bx      lr
-
-.endif
-
-#####
-
 .global minimult_ex_incr
 .type minimult_ex_incr,%function
 .thumb_func
