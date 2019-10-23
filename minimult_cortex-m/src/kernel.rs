@@ -7,6 +7,22 @@ use crate::bheap::MTBHeapDList;
 
 //
 
+/*
+Refer exception entry behavior of ARM v6/7/8-M Architecture Reference Manual
+
+sp+
+0-9: [context preservation by SW at PendSV]
+    R8      R9      R10     R11     R4      R5      R6      R7
+    (Rsvd.) LR(exc) 
+10-17: [Basic frame saved by HW at exception entry]
+    R0      R1      R2      R3      R12     LR(R14) RetAddr xPSR
+18-35: [Extended frame saved by HW at exception entry]
+    S0      S1      S2      S3      S4      S5      S6      S7
+    S8      S9      S10     S11     S12     S13     S14     S15
+    FPSCR   (Rsvd.)
+                    ^ 8-byte aligned here
+*/
+
 #[no_mangle]
 extern fn minimult_save_sp(curr_sp: *mut usize) -> *mut usize
 {
@@ -29,6 +45,34 @@ extern fn minimult_task_switch(sp: *mut usize) -> *mut usize
     }
 }
 
+fn setup_stack(sp: *mut usize, data: *mut u8, call_once: usize, inf_loop: fn() -> !) -> *mut usize
+{
+    let sp = sp as usize;
+    let sp = align_down::<u64>(sp); // 8-byte align
+    let sp = sp as *mut usize;
+
+    unsafe {
+        let sp = sp.sub(18 + 2/*margin*/);
+
+        // LR(exc): Return to Thread mode, Returb stack Main, Frame type Basic
+        sp.add(9).write_volatile(0xffff_fff9);
+        
+        // R0
+        sp.add(10 + 0).write_volatile(data as usize);
+        
+        // LR(R14)
+        sp.add(10 + 5).write_volatile(inf_loop as usize);
+
+        // RetAddr
+        sp.add(10 + 6).write_volatile(call_once);
+
+        // xPSR: set T-bit since Cortex-M has only Thumb instructions
+        sp.add(10 + 7).write_volatile(0x01000000);
+
+        sp
+    }
+}
+
 //
 
 extern "C" {
@@ -36,42 +80,6 @@ extern "C" {
     fn minimult_ex_decr(exc: &mut usize);
     fn minimult_ex_incr_ifgt0(exc: &mut usize) -> usize;
     fn minimult_ex_decr_if1(exc: &mut usize) -> usize;
-}
-
-fn setup_stack(sp: *mut usize, data: *mut u8, call_once: usize, inf_loop: fn() -> !) -> *mut usize
-{
-    /*
-     * Magic numbers from exception entry behavior of ARM v6/7/8-M Architecture Reference Manual
-     */
-
-    let sp = sp as usize;
-    let sp = align_down::<u64>(sp); // 8-byte align
-    let sp = sp as *mut usize;
-
-    unsafe {
-        let framesize = if cfg!(has_fpu) {
-            0x68 / 4
-        }
-        else {
-            0x20 / 4
-        };
-
-        let sp = sp.sub(framesize + 2/*margin*/);
-
-        // r0
-        sp.add(8 + 0).write_volatile(data as usize);
-        
-        // lr
-        sp.add(8 + 5).write_volatile(inf_loop as usize);
-
-        // ReturnAddress
-        sp.add(8 + 6).write_volatile(call_once);
-
-        // xPSR: set T-bit since Cortex-M has only Thumb instructions
-        sp.add(8 + 7).write_volatile(0x01000000);
-
-        sp
-    }
 }
 
 //

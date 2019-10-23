@@ -3,7 +3,7 @@ This crate for Rust provides a minimal multitask library `Minimult` for Cortex-M
 
 # Target
 
-**Single-core** systems of
+*Single-core* systems of
 
 * Cortex-M0 / M0+ / M1  (`thumbv6m-none-eabi`)
 * Cortex-M3  (`thumbv7m-none-eabi`)

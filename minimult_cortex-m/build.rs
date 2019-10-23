@@ -15,8 +15,4 @@ fn main() {
         println!("cargo:rustc-link-lib=static={}", name);
         println!("cargo:rustc-link-search={}", out_dir.display());
     }
-
-    if target.ends_with("eabihf") {
-        println!("cargo:rustc-cfg=has_fpu");
-    }
 }
