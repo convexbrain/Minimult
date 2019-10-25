@@ -107,8 +107,8 @@ fn task1(mut rcv: MTMsgReceiver<u32>)
     // other codes...
 
     loop {
-        let mut some_value = 0;
-        rcv.receive(|v| {some_value = *v});
+        let some_value = rcv.receive();
+        assert_eq!(some_value, 1);
 
         // other codes...
     }

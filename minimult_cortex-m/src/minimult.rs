@@ -42,7 +42,7 @@ impl<'a> Minimult<'a>
     /// * `M` - type of the message element.
     /// * `len` - length of the message queue array.
     /// * Returns the created message queue.
-    /// * (`len` * (size of `Option<M>`)) bytes of the memory block is consumed.
+    /// * (`len` * (size of `M`)) bytes of the memory block is consumed.
     pub fn msgq<M>(&mut self, len: usize) -> MTMsgQueue<'a, M> // NOTE: lifetime safety correctness
     {
         let mem = self.alloc.array(len);

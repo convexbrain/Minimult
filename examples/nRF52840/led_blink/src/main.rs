@@ -102,17 +102,16 @@ fn _led_tgl1(p0: P0, mut rcv: MTMsgReceiver<u32>)
             asm::delay(cnt_half / div);
         }
 
-        rcv.receive(|v| {div = *v});
+        div = rcv.receive();
     }
 }
 
 fn _led_tgl2(p0: P0, sv: MTSharedCh<u32>)
 {
     let cnt_half = 64_000_000 / 4;
-    let mut div = 1;
 
     loop {
-        sv.look(|v| {div = *v});
+        let div = *sv.look();
 
         p0.outset.write(|w| w.pin7().set_bit());
 
@@ -159,7 +158,7 @@ fn _led_cnt2(timer0: TIMER0, sc: MTSharedCh<u32>, cnt_1: &Count, cnt_2: &Count)
 
         //
 
-        sc.touch(|v| {*v = if flag {cnt_1.0} else {cnt_2.0}});
+        *sc.touch() = if flag {cnt_1.0} else {cnt_2.0};
         flag = !flag;
     }
 }

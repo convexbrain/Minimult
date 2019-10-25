@@ -17,7 +17,7 @@ fn wrap_inc(x: usize, bound: usize) -> usize
 /// Message queue for task-to-task communication
 pub struct MTMsgQueue<'a, M>
 {
-    mem: MTRawArray<Option<M>>,
+    mem: MTRawArray<M>,
     wr_idx: usize,
     rd_idx: usize,
     msg_cnt: MTEvent,
@@ -26,7 +26,7 @@ pub struct MTMsgQueue<'a, M>
 
 impl<'a, M> MTMsgQueue<'a, M>
 {
-    pub(crate) fn new(mem: MTRawArray<Option<M>>) -> MTMsgQueue<'a, M> // NOTE: lifetime safety correctness
+    pub(crate) fn new(mem: MTRawArray<M>) -> MTMsgQueue<'a, M> // NOTE: lifetime safety correctness
     {
         MTMsgQueue {
             mem,
@@ -94,9 +94,9 @@ impl<M> MTMsgSender<'_, '_, M>
         let curr_wr_idx = q.wr_idx;
         let next_wr_idx = wrap_inc(curr_wr_idx, q.mem.len());
 
-        q.mem.write_volatile(curr_wr_idx, Some(msg));
+        q.mem.write_volatile(curr_wr_idx, msg);
 
-        q.wr_idx = next_wr_idx; // NOTE: atomic access might be necessary
+        q.wr_idx = next_wr_idx; // NOTE: volatile access might be necessary
 
         q.msg_cnt.incr();
         Minimult::signal(&q.msg_cnt);
@@ -126,10 +126,9 @@ impl<M> MTMsgReceiver<'_, '_, M>
     }
 
     /// Receives a message.
-    /// * `f: F` - closure to refer the received message.
+    /// * Returns the received message.
     /// * Blocks if there is no available message entry.
-    pub fn receive<F>(&mut self, f: F)
-    where F: FnOnce(&M)
+    pub fn receive(&mut self) -> M
     {
         let q = unsafe { self.q.as_mut().unwrap() };
 
@@ -144,14 +143,13 @@ impl<M> MTMsgReceiver<'_, '_, M>
         let curr_rd_idx = q.rd_idx;
         let next_rd_idx = wrap_inc(curr_rd_idx, q.mem.len());
 
-        let ptr = q.mem.refer(curr_rd_idx);
+        let msg = q.mem.read_volatile(curr_rd_idx);
 
-        f(ptr.as_ref().unwrap());
-        ptr.take().unwrap();
-
-        q.rd_idx = next_rd_idx; // NOTE: atomic access might be necessary
+        q.rd_idx = next_rd_idx; // NOTE: volatile access might be necessary
 
         q.msg_cnt.decr();
         Minimult::signal(&q.msg_cnt);
+
+        msg
     }
 } 

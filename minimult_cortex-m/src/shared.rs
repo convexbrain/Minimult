@@ -47,46 +47,130 @@ unsafe impl<M: Send> Send for MTSharedCh<'_, '_, M> {}
 impl<M> MTSharedCh<'_, '_, M>
 {
     /// Look a shared variable.
-    /// * `f: F` - closure to refer the shared variable.
+    /// * Returns a `Deref`-able wrapper of the shared variable.
     /// * Blocks if the shared variable is touched by other channels.
-    pub fn look<F>(&self, f: F)
-    where F: FnOnce(&M)
+    pub fn look<'c>(&'c self) -> MTSharedLook<'c, M>
+    {
+        loop {
+            if let Some(v) = self.try_look() {
+                return v;
+            }
+            else {
+                let s = unsafe { self.s.as_mut().unwrap() };
+                Minimult::wait(&s.rw_cnt, MTEventCond::GreaterThan(0));
+            }
+        }
+    }
+
+    /// TODO: doc
+    pub fn try_look<'c>(&'c self) -> Option<MTSharedLook<'c, M>>
     {
         let s = unsafe { self.s.as_mut().unwrap() };
 
-        loop {
-            if s.rw_cnt.incr_ifgt0() {
-                break;
-            }
-
-            Minimult::wait(&s.rw_cnt, MTEventCond::GreaterThan(0));
+        if s.rw_cnt.incr_ifgt0() {
+            Some(MTSharedLook {
+                holder: &s.holder,
+                rw_cnt: &mut s.rw_cnt
+            })
         }
-
-        f(&s.holder);
-
-        s.rw_cnt.decr();
-        Minimult::signal(&s.rw_cnt);
+        else {
+            None
+        }
     }
 
     /// Touch a shared variable.
-    /// * `f: F` - closure to mutably refer the shared variable.
+    /// * Returns a `DerefMut`-able wrapper of the shared variable.
     /// * Blocks if the shared variable is looked or touched by other channels.
-    pub fn touch<F>(&self, f: F)
-    where F: FnOnce(&mut M)
+    pub fn touch<'c>(&'c self) -> MTSharedTouch<'c, M>
+    {
+        loop {
+            if let Some(v) = self.try_touch() {
+                return v;
+            }
+            else {
+                let s = unsafe { self.s.as_mut().unwrap() };
+                Minimult::wait(&s.rw_cnt, MTEventCond::Equal(1));
+            }
+        }
+    }
+
+    /// TODO: doc
+    pub fn try_touch<'c>(&'c self) -> Option<MTSharedTouch<'c, M>>
     {
         let s = unsafe { self.s.as_mut().unwrap() };
 
-        loop {
-            if s.rw_cnt.decr_if1() {
-                break;
-            }
-
-            Minimult::wait(&s.rw_cnt, MTEventCond::Equal(1));
+        if s.rw_cnt.decr_if1() {
+            Some(MTSharedTouch {
+                holder: &mut s.holder,
+                rw_cnt: &mut s.rw_cnt
+            })
         }
+        else {
+            None
+        }
+    }
+}
 
-        f(&mut s.holder);
+//
 
-        s.rw_cnt.incr();
-        Minimult::signal(&s.rw_cnt);
+/// TODO: doc
+pub struct MTSharedLook<'c, M>
+{
+    holder: &'c M,
+    rw_cnt: &'c mut MTEvent,
+}
+
+impl<M> core::ops::Deref for MTSharedLook<'_, M>
+{
+    type Target = M;
+
+    fn deref(&self) -> &Self::Target
+    {
+        self.holder
+    }
+}
+
+impl<M> Drop for MTSharedLook<'_, M>
+{
+    fn drop(&mut self)
+    {
+        self.rw_cnt.decr();
+        Minimult::signal(&self.rw_cnt);
+    }
+}
+
+//
+
+/// TODO: doc
+pub struct MTSharedTouch<'c, M>
+{
+    holder: &'c mut M,
+    rw_cnt: &'c mut MTEvent,
+}
+
+impl<M> core::ops::Deref for MTSharedTouch<'_, M>
+{
+    type Target = M;
+
+    fn deref(&self) -> &Self::Target
+    {
+        self.holder
+    }
+}
+
+impl<M> core::ops::DerefMut for MTSharedTouch<'_, M>
+{
+    fn deref_mut(&mut self) -> &mut Self::Target
+    {
+        self.holder
+    }
+}
+
+impl<M> Drop for MTSharedTouch<'_, M>
+{
+    fn drop(&mut self)
+    {
+        self.rw_cnt.incr();
+        Minimult::signal(&self.rw_cnt);
     }
 }
