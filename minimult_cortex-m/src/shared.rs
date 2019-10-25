@@ -46,9 +46,9 @@ unsafe impl<M: Send> Send for MTSharedCh<'_, '_, M> {}
 
 impl<M> MTSharedCh<'_, '_, M>
 {
-    /// Look a shared variable.
+    /// Makes an immutable access to a shared variable.
     /// * Returns a `Deref`-able wrapper of the shared variable.
-    /// * Blocks if the shared variable is touched by other channels.
+    /// * Blocks if the shared variable is `touch`ed by other channels.
     pub fn look<'c>(&'c self) -> MTSharedLook<'c, M>
     {
         loop {
@@ -62,7 +62,9 @@ impl<M> MTSharedCh<'_, '_, M>
         }
     }
 
-    /// TODO: doc
+    /// Tries to make an immutable access to a shared variable.
+    /// * Returns a `Deref`-able wrapper of the shared variable in `Option`.
+    /// * Gets `None` if the shared variable is `touch`ed by other channels.
     pub fn try_look<'c>(&'c self) -> Option<MTSharedLook<'c, M>>
     {
         let s = unsafe { self.s.as_mut().unwrap() };
@@ -78,9 +80,9 @@ impl<M> MTSharedCh<'_, '_, M>
         }
     }
 
-    /// Touch a shared variable.
+    /// Makes a mutable access to a shared variable.
     /// * Returns a `DerefMut`-able wrapper of the shared variable.
-    /// * Blocks if the shared variable is looked or touched by other channels.
+    /// * Blocks if the shared variable is `look`ed or `touch`ed by other channels.
     pub fn touch<'c>(&'c self) -> MTSharedTouch<'c, M>
     {
         loop {
@@ -94,7 +96,9 @@ impl<M> MTSharedCh<'_, '_, M>
         }
     }
 
-    /// TODO: doc
+    /// Tries to make a mutable access to a shared variable.
+    /// * Returns a `DerefMut`-able wrapper of the shared variable in `Option`.
+    /// * Gets `None` if the shared variable is `look`ed or `touch`ed by other channels.
     pub fn try_touch<'c>(&'c self) -> Option<MTSharedTouch<'c, M>>
     {
         let s = unsafe { self.s.as_mut().unwrap() };
@@ -113,7 +117,7 @@ impl<M> MTSharedCh<'_, '_, M>
 
 //
 
-/// TODO: doc
+/// Shared variable's immutable access scope wrapper
 pub struct MTSharedLook<'c, M>
 {
     holder: &'c M,
@@ -141,7 +145,7 @@ impl<M> Drop for MTSharedLook<'_, M>
 
 //
 
-/// TODO: doc
+/// Shared variable's mutable access scope wrapper
 pub struct MTSharedTouch<'c, M>
 {
     holder: &'c mut M,
