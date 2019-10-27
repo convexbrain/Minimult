@@ -279,6 +279,9 @@ impl MTKernel
     pub(crate) fn register_once<T>(&mut self, tid: MTTaskId, pri: MTTaskPri, stack: MTRawArray<usize>, t: T)
     where T: FnOnce() + Send // NOTE: unsafe lifetime
     {
+        assert!((tid as usize) < self.tasks.len(),
+                "tid {}: out of number of tasks", tid);
+
         let task = self.tasks.refer(tid);
 
         assert_eq!(task.state, MTState::None,
@@ -490,6 +493,9 @@ impl MTKernel
 
     pub(crate) fn kick(&mut self, tid: MTTaskId)
     {
+        assert!((tid as usize) < self.tasks.len(),
+                "tid {}: out of number of tasks", tid);
+        
         let task = self.tasks.refer(tid);
 
         task.idle_kick_ev.incr();
