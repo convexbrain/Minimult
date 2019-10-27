@@ -3,8 +3,10 @@
 
 use cortex_m::asm;
 use cortex_m::peripheral::NVIC;
+use cortex_m::Peripherals;
 
 use cortex_m_rt::entry;
+use cortex_m_rt::exception;
 
 extern crate panic_semihosting;
 
@@ -16,12 +18,12 @@ use minimult_cortex_m::*;
 
 //
 
-struct Count(u32);
+struct Toggle(u32, u32);
 
 #[entry]
 fn main() -> ! {
     let mut mem = Minimult::mem::<[u8; 4096]>();
-    let mut mt = Minimult::new(&mut mem, 2);
+    let mut mt = Minimult::new(&mut mem, 3);
 
     // ----- ----- ----- ----- -----
 
@@ -50,83 +52,81 @@ fn main() -> ! {
 
     unsafe { NVIC::unmask(Interrupt::TIMER0) }
 
-    let cycles = 1_000_000 * 2;
-    timer0.cc[0].write(|w| unsafe { w.cc().bits(cycles) }); // 2 sec
+    let cycles = 1_000_000;
+    timer0.cc[0].write(|w| unsafe { w.cc().bits(cycles) }); // 1 sec
     timer0.tasks_clear.write(|w| w.tasks_clear().set_bit());
     timer0.tasks_start.write(|w| w.tasks_start().set_bit());
 
     // ----- ----- ----- ----- -----
 
-    let v1 = Count(4);
-    let v2 = Count(16);
+    let cmperi = Peripherals::take().unwrap();
+    let mut syst = cmperi.SYST;
+    syst.set_clock_source(cortex_m::peripheral::syst::SystClkSource::Core);
+    syst.set_reload(16_000_000 - 1);
+    syst.clear_current();
+    syst.enable_counter();
+    syst.enable_interrupt();
+    let systcnt = 64_000_000/16_000_000 * 7/3; // 7/3 sec
+
+    // ----- ----- ----- ----- -----
+
+    let cnt0 = 64_000_000 / 32;
+    let div0 = 1;
+    let cnt1 = 64_000_000 / 4;
+    let div1 = 4;
 
     /* using message queue
      */
-    let mut q = mt.msgq::<u32>(4);
+    let mut q = mt.msgq::<Toggle>(4);
     let (snd, rcv) = q.ch();
-    mt.register(0, 1, 256, || _led_cnt1(timer0, snd, &v1, &v2));
-    mt.register(1, 1, 256, || _led_tgl1(p0, rcv)); // blink and pause
 
-    /* using shared variable
-    let sv = mt.share(1_u32);
-    let sc0 = sv.ch();
-    let sc1 = sv.ch();
-    mt.register(0, 1, 256, || _led_cnt2(timer0, sc0, &v1, &v2));
-    mt.register(1, 1, 256, || _led_tgl2(p0, sc1)); // keep blinking
-     */
+    let s_snd = mt.share(snd);
+    let sc_snd0 = s_snd.ch();
+    let sc_snd1 = s_snd.ch();
 
-    //core::mem::drop(q); // must be error
-    //core::mem::drop(v1); // must be error
-    //core::mem::drop(mem); // must be error
-    //core::mem::drop(sv); // must be error
-    //core::mem::drop(sc0); // must be error
+    mt.register(0, 1, 256, || _led_tim0(timer0, sc_snd0, cnt0, div0));
+    mt.register(1, 1, 256, || _led_tim1(systcnt, sc_snd1, cnt1, div1));
+    mt.register(2, 2, 256, || _led_tgl(p0, rcv)); // blink and pause
+
+    {   // must be error in terms of lifetime
+        //core::mem::drop(mem);
+        //core::mem::drop(q);
+        //core::mem::drop(s_snd);
+        //core::mem::drop(sc_snd0);
+        //core::mem::drop(sc_snd1);
+        //core::mem::drop(rcv);
+    }
     
     // ----- ----- ----- ----- -----
 
     mt.run()
 }
 
-fn _led_tgl1(p0: P0, mut rcv: MTMsgReceiver<u32>)
+fn _led_tgl(p0: P0, mut rcv: MTMsgReceiver<Toggle>)
 {
-    let cnt_half = 64_000_000 / 4;
-    let mut div = 2;
+    let mut tgl = Toggle(64_000_000 / 16, 1);
 
     loop {
-        for _ in 0..div {
+        for _ in 0..tgl.1 {
             p0.outset.write(|w| w.pin7().set_bit());
 
-            asm::delay(cnt_half / div);
+            asm::delay(tgl.0 / 4 / tgl.1);
 
             p0.outclr.write(|w| w.pin7().set_bit());
 
-            asm::delay(cnt_half / div);
+            asm::delay(tgl.0 / 4 / tgl.1);
         }
 
-        div = rcv.receive();
+            p0.outclr.write(|w| w.pin7().set_bit());
+
+            asm::delay(tgl.0 / 2);
+
+        tgl = rcv.receive();
     }
 }
 
-fn _led_tgl2(p0: P0, sv: MTSharedCh<u32>)
+fn _led_tim0(timer0: TIMER0, sc_snd: MTSharedCh<MTMsgSender<Toggle>>, cnt: u32, div: u32)
 {
-    let cnt_half = 64_000_000 / 4;
-
-    loop {
-        let div = *sv.look();
-
-        p0.outset.write(|w| w.pin7().set_bit());
-
-        asm::delay(cnt_half / div);
-
-        p0.outclr.write(|w| w.pin7().set_bit());
-
-        asm::delay(cnt_half / div);
-    }
-}
-
-fn _led_cnt1(timer0: TIMER0, mut snd: MTMsgSender<u32>, cnt_1: &Count, cnt_2: &Count)
-{
-    let mut flag = true;
-
     loop {
         Minimult::idle();
 
@@ -138,28 +138,22 @@ fn _led_cnt1(timer0: TIMER0, mut snd: MTMsgSender<u32>, cnt_1: &Count, cnt_2: &C
 
         //
 
-        snd.send(if flag {cnt_1.0} else {cnt_2.0});
-        flag = !flag;
+        let mut snd = sc_snd.touch();
+        snd.send(Toggle(cnt, div));
     }
 }
 
-fn _led_cnt2(timer0: TIMER0, sc: MTSharedCh<u32>, cnt_1: &Count, cnt_2: &Count)
+fn _led_tim1(timcnt: u32, sc_snd: MTSharedCh<MTMsgSender<Toggle>>, cnt: u32, div: u32)
 {
-    let mut flag = true;
-
     loop {
-        Minimult::idle();
+        for _ in 0..timcnt {
+            Minimult::idle();
+        }
 
         //
 
-        timer0.events_compare[0].write(|w| {w.events_compare().bit(false)});
-        NVIC::unpend(Interrupt::TIMER0);
-        unsafe { NVIC::unmask(Interrupt::TIMER0) }
-
-        //
-
-        *sc.touch() = if flag {cnt_1.0} else {cnt_2.0};
-        flag = !flag;
+        let mut snd = sc_snd.touch();
+        snd.send(Toggle(cnt, div));
     }
 }
 
@@ -169,4 +163,10 @@ fn TIMER0()
     NVIC::mask(Interrupt::TIMER0);
     
     Minimult::kick(0);
+}
+
+#[exception]
+fn SysTick()
+{
+    Minimult::kick(1);
 }
