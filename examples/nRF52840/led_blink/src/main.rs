@@ -18,16 +18,17 @@ use minimult_cortex_m::*;
 
 //
 
+const CLOCK: u32 = 64_000_000;
 struct Toggle(u32, u32);
 
 #[entry]
 fn main() -> ! {
-    let mut mem = Minimult::mem::<[u8; 4096]>();
-    let mut mt = Minimult::new(&mut mem, 3);
+    let peri = nrf52840_pac::Peripherals::take().unwrap();
 
     // ----- ----- ----- ----- -----
 
-    let peri = nrf52840_pac::Peripherals::take().unwrap();
+    let mut mem = Minimult::mem::<[u8; 4096]>();
+    let mut mt = Minimult::new(&mut mem, 3);
 
     // ----- ----- ----- ----- -----
 
@@ -62,17 +63,17 @@ fn main() -> ! {
     let cmperi = Peripherals::take().unwrap();
     let mut syst = cmperi.SYST;
     syst.set_clock_source(cortex_m::peripheral::syst::SystClkSource::Core);
-    syst.set_reload(16_000_000 - 1);
+    syst.set_reload(CLOCK / 4 - 1);
     syst.clear_current();
     syst.enable_counter();
     syst.enable_interrupt();
-    let systcnt = 64_000_000/16_000_000 * 7/3; // 7/3 sec
+    let systcnt = 9; // 9/4=2.25 sec
 
     // ----- ----- ----- ----- -----
 
-    let cnt0 = 64_000_000 / 32;
+    let cnt0 = CLOCK / 32;
     let div0 = 1;
-    let cnt1 = 64_000_000 / 4;
+    let cnt1 = CLOCK / 4;
     let div1 = 4;
 
     /* using message queue
@@ -104,7 +105,7 @@ fn main() -> ! {
 
 fn _led_tgl(p0: P0, mut rcv: MTMsgReceiver<Toggle>)
 {
-    let mut tgl = Toggle(64_000_000 / 16, 1);
+    let mut tgl = Toggle(CLOCK / 16, 1);
 
     loop {
         for _ in 0..tgl.1 {
@@ -117,9 +118,9 @@ fn _led_tgl(p0: P0, mut rcv: MTMsgReceiver<Toggle>)
             asm::delay(tgl.0 / 4 / tgl.1);
         }
 
-            p0.outclr.write(|w| w.pin7().set_bit());
+        p0.outclr.write(|w| w.pin7().set_bit());
 
-            asm::delay(tgl.0 / 2);
+        asm::delay(tgl.0 / 2);
 
         tgl = rcv.receive();
     }
