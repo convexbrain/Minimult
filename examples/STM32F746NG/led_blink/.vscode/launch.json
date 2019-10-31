@@ -1,0 +1,44 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "cortex-debug",
+            "request": "launch",
+            "name": "Debug (J-Link)",
+
+            "servertype": "jlink",
+            "cwd": "${workspaceRoot}",
+            "device": "STM32F746NG",
+            "executable": "./target/thumbv7em-none-eabihf/debug/led_blink",
+
+            "interface": "swd",
+            "ipAddress": null,
+            "serialNumber": null,
+
+            "svdFile": "../en.stm32f7_svd/STM32F7_svd/STM32F7_svd_V1.4/STM32F7x6.svd",
+
+            "runToMain": true
+        },
+        {
+            "type": "cortex-debug",
+            "request": "launch",
+            "name": "Release (J-Link)",
+
+            "servertype": "jlink",
+            "cwd": "${workspaceRoot}",
+            "device": "STM32F746NG",
+            "executable": "./target/thumbv7em-none-eabihf/release/led_blink",
+
+            "interface": "swd",
+            "ipAddress": null,
+            "serialNumber": null,
+
+            "svdFile": "../en.stm32f7_svd/STM32F7_svd/STM32F7_svd_V1.4/STM32F7x6.svd",
+
+            "runToMain": false
+        }
+    ]
+}

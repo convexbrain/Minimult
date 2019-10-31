@@ -1,0 +1,23 @@
+[package]
+name = "led_blink"
+version = "0.1.0"
+authors = ["convexbrain <convexbrain@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+cortex-m = "0.6.1"
+cortex-m-rt = "0.6.10"
+panic-semihosting = "0.5.3"
+minimult_cortex-m = {path = "../../../minimult_cortex-m"}
+
+[dependencies.stm32f7xx-hal]
+git = "https://github.com/stm32-rs/stm32f7xx-hal"
+rev = "616b6152476f5e6702755fc2e5180cb3a88b1fa2"
+features = ["stm32f746", "rt"]
+
+[profile.dev]
+opt-level = 1      # controls the `--opt-level` the compiler builds with.
+                   # 0-1 is good for debugging. 2 is well-optimized. Max is 3.
+                   # 's' attempts to reduce size, 'z' reduces size even more.
