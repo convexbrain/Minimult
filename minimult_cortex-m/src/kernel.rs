@@ -1,4 +1,3 @@
-use cortex_m::peripheral::SCB;
 use core::mem::{size_of, align_of, transmute};
 
 use crate::{MTTaskId, MTTaskPri};
@@ -326,7 +325,7 @@ impl MTKernel
         let control = cortex_m::register::control::read();
         assert!(control.spsel().is_msp()); // CONTROL.SPSEL: SP_main
 
-        let scb_ptr = SCB::ptr();
+        let scb_ptr = cortex_m::peripheral::SCB::ptr();
         unsafe {
             (*scb_ptr).aircr.write(0x05fa0700); // PRIGROUP: 7 - no exception preempts each other
         }
@@ -363,7 +362,7 @@ impl MTKernel
     {
         // clear service call request
 
-        SCB::clear_pendsv();
+        cortex_m::peripheral::SCB::clear_pendsv();
 
         // change state
 
@@ -487,7 +486,7 @@ impl MTKernel
     pub(crate) fn dispatch(&self)
     {
         if self.is_set {
-            SCB::set_pendsv();
+            cortex_m::peripheral::SCB::set_pendsv();
         }
     }
 
