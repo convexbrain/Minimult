@@ -3,6 +3,7 @@ use core::marker::PhantomData;
 use crate::minimult::Minimult;
 use crate::memory::MTRawArray;
 use crate::kernel::{MTEvent, MTEventCond};
+use crate::bkptpanic::BKUnwrap;
 
 //
 
@@ -71,7 +72,7 @@ impl<M> MTMsgSender<'_, '_, M>
     /// * Returns the number of vacant message entries.
     pub fn vacant(&self) -> usize
     {
-        let q = unsafe { self.q.as_mut().unwrap() };
+        let q = unsafe { self.q.as_mut().bk_unwrap() };
 
         q.mem.len() - q.msg_cnt.cnt()
     }
@@ -81,7 +82,7 @@ impl<M> MTMsgSender<'_, '_, M>
     /// * Blocks if there is no vacant message entry.
     pub fn send(&mut self, msg: M)
     {
-        let q = unsafe { self.q.as_mut().unwrap() };
+        let q = unsafe { self.q.as_mut().bk_unwrap() };
 
         loop {
             if q.msg_cnt.cnt() < q.mem.len() {
@@ -120,7 +121,7 @@ impl<M> MTMsgReceiver<'_, '_, M>
     /// * Returns the number of available message entries.
     pub fn available(&self) -> usize
     {
-        let q = unsafe { self.q.as_mut().unwrap() };
+        let q = unsafe { self.q.as_mut().bk_unwrap() };
 
         q.msg_cnt.cnt()
     }
@@ -130,7 +131,7 @@ impl<M> MTMsgReceiver<'_, '_, M>
     /// * Blocks if there is no available message entry.
     pub fn receive(&mut self) -> M
     {
-        let q = unsafe { self.q.as_mut().unwrap() };
+        let q = unsafe { self.q.as_mut().bk_unwrap() };
 
         loop {
             if q.msg_cnt.cnt() > 0 {

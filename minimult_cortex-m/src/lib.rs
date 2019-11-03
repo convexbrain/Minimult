@@ -11,8 +11,6 @@ This crate for Rust provides a minimal multitask library `Minimult` for Cortex-M
 * Cortex-M23  (`thumbv8m.base-none-eabi`)
 * Cortex-M33 / M35P  (`thumbv8m.main-none-eabi`) with FPU  (`thumbv8m.main-none-eabihf`)
 
-`Minimult` is still in **beta** because the author had only a few tests only on Cortex-M4 with FPU.
-
 # Features
 
 * Task like that of a typical RTOS
@@ -134,12 +132,13 @@ Type parameter rule:
  * B: memory block
 */
 
-mod minimult; // Lifetime safe and high-level API wrapper
-mod kernel;   // Low-level unsafe and lifetime unbounded singleton
-mod bheap;    // binary heap and list
-mod memory;   // static memory allocation
-mod msgqueue; // message queue
-mod shared;   // read-write shared variable
+mod minimult;  // Lifetime safe and high-level API wrapper
+mod kernel;    // Low-level unsafe and lifetime unbounded singleton
+mod bheap;     // binary heap and list
+mod memory;    // static memory allocation
+mod msgqueue;  // message queue
+mod shared;    // read-write shared variable
+mod bkptpanic; // bkpt panic, assert and unwrap
 
 /// Task identifier
 pub type MTTaskId = u16;

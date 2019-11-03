@@ -7,36 +7,36 @@
         {
             "type": "cortex-debug",
             "request": "launch",
-            "name": "Debug (Bumpy)",
+            "name": "Debug (J-Link)",
 
-            "servertype": "bmp",
+            "servertype": "jlink",
             "cwd": "${workspaceRoot}",
-            "device": "nRF52840_xxAA",
+            "device": "STM32F746NG",
             "executable": "./target/thumbv7em-none-eabihf/debug/led_blink",
 
-            "BMPGDBSerialPort": "COM3",
             "interface": "swd",
-            "targetId": 1,
+            "ipAddress": null,
+            "serialNumber": null,
 
-            "svdFile": "../nRF5_SDK_15.3.0_59ac345/modules/nrfx/mdk/nrf52840.svd",
+            "svdFile": "../en.stm32f7_svd/STM32F7_svd/STM32F7_svd_V1.4/STM32F7x6.svd",
 
             "runToMain": true
         },
         {
             "type": "cortex-debug",
             "request": "launch",
-            "name": "Release (Bumpy)",
+            "name": "Release (J-Link)",
 
-            "servertype": "bmp",
+            "servertype": "jlink",
             "cwd": "${workspaceRoot}",
-            "device": "nRF52840_xxAA",
+            "device": "STM32F746NG",
             "executable": "./target/thumbv7em-none-eabihf/release/led_blink",
 
-            "BMPGDBSerialPort": "COM3",
             "interface": "swd",
-            "targetId": 1,
+            "ipAddress": null,
+            "serialNumber": null,
 
-            "svdFile": "../nRF5_SDK_15.3.0_59ac345/modules/nrfx/mdk/nrf52840.svd",
+            "svdFile": "../en.stm32f7_svd/STM32F7_svd/STM32F7_svd_V1.4/STM32F7x6.svd",
 
             "runToMain": false
         }

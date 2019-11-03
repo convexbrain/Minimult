@@ -12,9 +12,9 @@ cortex-m-rt = "0.6.10"
 panic-semihosting = "0.5.3"
 minimult_cortex-m = {path = "../../../minimult_cortex-m"}
 
-[dependencies.nrf52840-pac]
-version = "0.8.0"
-features = ["rt"]
+[dependencies.stm32l0xx-hal]
+version = "0.4.0"
+features = ["stm32l0x3", "rt"]
 
 [profile.dev]
 opt-level = 1      # controls the `--opt-level` the compiler builds with.

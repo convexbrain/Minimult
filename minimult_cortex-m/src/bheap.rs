@@ -1,6 +1,8 @@
 use num_integer::Integer;
 
 use crate::memory::MTRawArray;
+use crate::bk_assert;
+use crate::bkptpanic::BKUnwrap;
 
 //
 
@@ -43,8 +45,8 @@ where I: Integer + Into<usize> + Copy, K: Ord
             while pos > I::zero() {
                 let parent = (pos - I::one()) / two;
 
-                let key_pos = &self.array.refer(pos).as_ref().unwrap().1;
-                let key_parent = &self.array.refer(parent).as_ref().unwrap().1;
+                let key_pos = &self.array.refer(pos).as_ref().bk_unwrap().1;
+                let key_parent = &self.array.refer(parent).as_ref().bk_unwrap().1;
 
                 if key_pos >= key_parent {
                     break;
@@ -66,11 +68,11 @@ where I: Integer + Into<usize> + Copy, K: Ord
             let child0 = (pos * two) + I::one();
             let child1 = (pos * two) + two;
 
-            let key_pos = &self.array.refer(pos).as_ref().unwrap().1;
-            let key_child0 = &self.array.refer(child0).as_ref().unwrap().1;
+            let key_pos = &self.array.refer(pos).as_ref().bk_unwrap().1;
+            let key_child0 = &self.array.refer(child0).as_ref().bk_unwrap().1;
 
             let (child, key_child) = if child1 < self.n_bheap {
-                let key_child1 = &self.array.refer(child1).as_ref().unwrap().1;
+                let key_child1 = &self.array.refer(child1).as_ref().bk_unwrap().1;
 
                 if key_child0 <= key_child1 {
                     (child0, key_child0)
@@ -94,8 +96,8 @@ where I: Integer + Into<usize> + Copy, K: Ord
 
     fn flist_to_bheap(&mut self, pos: I)
     {
-        assert!(pos >= self.n_bheap);
-        assert!(pos < self.n_bheap + self.n_flist);
+        bk_assert!(pos >= self.n_bheap);
+        bk_assert!(pos < self.n_bheap + self.n_flist);
 
         // replace flist pos <=> flist head
         self.replace(pos, self.n_bheap);
@@ -120,7 +122,7 @@ where I: Integer + Into<usize> + Copy, K: Ord
 
     pub(crate) fn bheap_h_to_flist_h(&mut self)
     {
-        assert!(self.n_bheap > I::zero());
+        bk_assert!(self.n_bheap > I::zero());
         
         // replace bheap head <=> bheap tail
         let pos1 = self.n_bheap - I::one();
@@ -156,7 +158,7 @@ where I: Integer + Into<usize> + Copy, K: Ord
     pub(crate) fn bheap_h(&self) -> Option<I>
     {
         if self.n_bheap > I::zero() {
-            Some(self.array.refer(I::zero()).as_ref().unwrap().0)
+            Some(self.array.refer(I::zero()).as_ref().bk_unwrap().0)
         }
         else {
             None
@@ -171,7 +173,7 @@ where I: Integer + Into<usize> + Copy, K: Ord
 
         let mut pos = pos_b;
         while pos < pos_e {
-            if to_bheap(self.array.refer(pos).as_ref().unwrap().0) {
+            if to_bheap(self.array.refer(pos).as_ref().bk_unwrap().0) {
                 self.flist_to_bheap(pos);
             }
             pos = pos + I::one();
