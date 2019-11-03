@@ -2,6 +2,7 @@ use core::marker::PhantomData;
 
 use crate::minimult::Minimult;
 use crate::kernel::{MTEvent, MTEventCond};
+use crate::bkptpanic::BKUnwrap;
 
 /// Shared variable among tasks
 pub struct MTShared<'a, M>
@@ -56,7 +57,7 @@ impl<M> MTSharedCh<'_, '_, M>
                 return v;
             }
             else {
-                let s = unsafe { self.s.as_mut().unwrap() };
+                let s = unsafe { self.s.as_mut().bk_unwrap() };
                 Minimult::wait(&s.rw_cnt, MTEventCond::GreaterThan(0));
             }
         }
@@ -67,7 +68,7 @@ impl<M> MTSharedCh<'_, '_, M>
     /// * Gets `None` if the shared variable is `touch`ed by other channels.
     pub fn try_look<'c>(&'c self) -> Option<MTSharedLook<'c, M>>
     {
-        let s = unsafe { self.s.as_mut().unwrap() };
+        let s = unsafe { self.s.as_mut().bk_unwrap() };
 
         if s.rw_cnt.incr_ifgt0() {
             Some(MTSharedLook {
@@ -90,7 +91,7 @@ impl<M> MTSharedCh<'_, '_, M>
                 return v;
             }
             else {
-                let s = unsafe { self.s.as_mut().unwrap() };
+                let s = unsafe { self.s.as_mut().bk_unwrap() };
                 Minimult::wait(&s.rw_cnt, MTEventCond::Equal(1));
             }
         }
@@ -101,7 +102,7 @@ impl<M> MTSharedCh<'_, '_, M>
     /// * Gets `None` if the shared variable is `look`ed or `touch`ed by other channels.
     pub fn try_touch<'c>(&'c self) -> Option<MTSharedTouch<'c, M>>
     {
-        let s = unsafe { self.s.as_mut().unwrap() };
+        let s = unsafe { self.s.as_mut().bk_unwrap() };
 
         if s.rw_cnt.decr_if1() {
             Some(MTSharedTouch {

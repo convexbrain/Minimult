@@ -3,6 +3,8 @@ use core::mem::{size_of, align_of, transmute};
 use crate::{MTTaskId, MTTaskPri};
 use crate::memory::MTRawArray;
 use crate::bheap::MTBHeapDList;
+use crate::bk_panic;
+use crate::bkptpanic::BKUnwrap;
 
 //
 
@@ -118,7 +120,7 @@ fn align_down<A>(x: usize) -> usize
 
 fn inf_loop() -> !
 {
-    let tm = mtkernel_get_mut().unwrap();
+    let tm = mtkernel_get_mut().bk_unwrap();
     tm.none();
 
     loop {}
@@ -194,7 +196,7 @@ impl MTEvent
     {
         match cond {
             MTEventCond::None => {
-                panic!()
+                bk_panic!()
             }
             MTEventCond::Equal(target) => {
                 self.cnt() == *target
@@ -283,8 +285,8 @@ impl MTKernel
 
         let task = self.tasks.refer(tid);
 
-        assert_eq!(task.state, MTState::None,
-                   "tid {}: double registration", tid);
+        assert!(task.state == MTState::None,
+                "tid {}: double registration", tid);
 
         let sp_start = stack.head();
         let sp_end = stack.tail();
@@ -323,7 +325,8 @@ impl MTKernel
     pub(crate) fn run(&mut self) -> !
     {
         let control = cortex_m::register::control::read();
-        assert!(control.spsel().is_msp()); // CONTROL.SPSEL: SP_main
+        assert!(control.spsel().is_msp(),
+                "CONTROL.SPSEL: must be SP_main");
 
         let scb_ptr = cortex_m::peripheral::SCB::ptr();
         unsafe {
@@ -347,7 +350,7 @@ impl MTKernel
 
         if let Some(task) = self.task_current() {
             assert!((curr_sp >= task.sp_start) && (curr_sp <= task.sp_end),
-                    "tid {}: stack shortage", self.tid.unwrap());
+                    "tid {}: stack shortage", self.tid.bk_unwrap());
 
             task.sp = curr_sp;
         }
@@ -387,7 +390,7 @@ impl MTKernel
 
             match task.state {
                 MTState::Waiting => {
-                    let ev = unsafe { task.wait_ev.as_ref().unwrap() };
+                    let ev = unsafe { task.wait_ev.as_ref().bk_unwrap() };
                     
                     if ev.cond_matched(&task.wait_evcond) {
                         task.state = MTState::Ready;
@@ -397,7 +400,7 @@ impl MTKernel
                         false
                     }
                 }
-                _ => panic!()
+                _ => bk_panic!()
             }
         });
 
@@ -430,7 +433,7 @@ impl MTKernel
 
     fn none(&mut self)
     {
-        let task = self.task_current().unwrap();
+        let task = self.task_current().bk_unwrap();
 
         task.state = MTState::None; // NOTE: atomic access might be necessary
         
@@ -440,7 +443,7 @@ impl MTKernel
     pub(crate) fn idle(&mut self)
     {
         loop {
-            let task = self.task_current().unwrap();
+            let task = self.task_current().bk_unwrap();
 
             if task.idle_kick_ev.cnt() != 0 {
                 task.idle_kick_ev.decr();
@@ -457,7 +460,7 @@ impl MTKernel
 
     pub(crate) fn wait(&mut self, ev: &MTEvent, evcond: MTEventCond)
     {
-        let task = self.task_current().unwrap();
+        let task = self.task_current().bk_unwrap();
 
         task.wait_ev = ev;
         task.wait_evcond = evcond;

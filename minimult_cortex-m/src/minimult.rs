@@ -3,6 +3,7 @@ use crate::msgqueue::MTMsgQueue;
 use crate::shared::MTShared;
 use crate::memory::{MTMemBlk, MTAlloc};
 use crate::kernel::{mtkernel_create, mtkernel_get_ref, mtkernel_get_mut, MTEvent, MTEventCond};
+use crate::bkptpanic::BKUnwrap;
 
 /// Multitasking API
 pub struct Minimult<'a>
@@ -67,7 +68,7 @@ impl<'a> Minimult<'a>
     pub fn register<T>(&mut self, tid: MTTaskId, pri: MTTaskPri, stack_len: usize, task: T)
     where T: FnOnce() + Send + 'a // NOTE: lifetime safety correctness
     {
-        let tm = mtkernel_get_mut().unwrap();
+        let tm = mtkernel_get_mut().bk_unwrap();
 
         let stack = self.alloc.array(stack_len);
         
@@ -78,7 +79,7 @@ impl<'a> Minimult<'a>
     /// * Never returns.
     pub fn run(self) -> !
     {
-        let tm = mtkernel_get_mut().unwrap();
+        let tm = mtkernel_get_mut().bk_unwrap();
 
         tm.run()
     }

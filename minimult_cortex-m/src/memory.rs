@@ -1,6 +1,9 @@
 use core::mem::{MaybeUninit, size_of, align_of};
 use core::marker::PhantomData;
 
+use crate::{bk_assert};
+use crate::bkptpanic::BKUnwrap;
+
 //
 
 fn align_up<A>(x: usize) -> usize
@@ -48,19 +51,19 @@ impl<V> MTRawArray<V>
     where I: Into<usize>
     {
         let i = i.into();
-        assert!(i < self.len);
+        bk_assert!(i < self.len);
 
         let ptr = self.head;
         let ptr = unsafe { ptr.add(i) };
 
-        unsafe { ptr.as_mut().unwrap() }
+        unsafe { ptr.as_mut().bk_unwrap() }
     }
 
     pub(crate) fn read_volatile<I>(&self, i: I) -> V
     where I: Into<usize>
     {
         let i = i.into();
-        assert!(i < self.len);
+        bk_assert!(i < self.len);
 
         let ptr = self.head;
         let ptr = unsafe { ptr.add(i) };
@@ -72,7 +75,7 @@ impl<V> MTRawArray<V>
     where I: Into<usize>
     {
         let i = i.into();
-        assert!(i < self.len);
+        bk_assert!(i < self.len);
 
         let ptr = self.head;
         let ptr = unsafe { ptr.add(i) };
@@ -84,7 +87,7 @@ impl<V> MTRawArray<V>
     where I: Into<usize>
     {
         let i = i.into();
-        assert!(i < self.len);
+        bk_assert!(i < self.len);
 
         let ptr = self.head;
         let ptr = unsafe { ptr.add(i) };

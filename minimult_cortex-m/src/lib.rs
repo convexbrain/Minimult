@@ -132,12 +132,13 @@ Type parameter rule:
  * B: memory block
 */
 
-mod minimult; // Lifetime safe and high-level API wrapper
-mod kernel;   // Low-level unsafe and lifetime unbounded singleton
-mod bheap;    // binary heap and list
-mod memory;   // static memory allocation
-mod msgqueue; // message queue
-mod shared;   // read-write shared variable
+mod minimult;  // Lifetime safe and high-level API wrapper
+mod kernel;    // Low-level unsafe and lifetime unbounded singleton
+mod bheap;     // binary heap and list
+mod memory;    // static memory allocation
+mod msgqueue;  // message queue
+mod shared;    // read-write shared variable
+mod bkptpanic; // bkpt panic, assert and unwrap
 
 /// Task identifier
 pub type MTTaskId = u16;
