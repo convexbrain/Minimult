@@ -1,7 +1,7 @@
 use core::mem::{MaybeUninit, size_of, align_of};
 use core::marker::PhantomData;
 
-use crate::{bk_assert};
+use crate::bk_assert;
 use crate::bkptpanic::BKUnwrap;
 
 //
