@@ -3,13 +3,13 @@
 #target = "thumbv6m-none-eabi"
 
 # Cortex-M3
-#target = "thumbv7m-none-eabi"
+target = "thumbv7m-none-eabi"
 
 # Cortex-M4 / M7
 #target = "thumbv7em-none-eabi"
 
 # Cortex-M4 / M7 with FPU
-target = "thumbv7em-none-eabihf"
+#target = "thumbv7em-none-eabihf"
 
 # Cortex-M23
 #target = "thumbv8m.base-none-eabi"
@@ -27,3 +27,6 @@ rustflags = [
     # GNU linker in case LLD doesn't works well
     "-C", "linker=C:/Program Files (x86)/GNU Tools ARM Embedded/8 2019-q3-update/bin/arm-none-eabi-ld",
 ]
+
+[target.'cfg(target_arch = "arm")']
+runner = "sh run.sh"

@@ -26,3 +26,12 @@ cortex-m = "0.6.1"
 [dependencies.num-integer]
 version = "0.1.41"
 default-features = false
+
+[dev-dependencies]
+cortex-m-rt = "0.6.10"
+panic-semihosting = {version = "0.5.3", features = ["exit"]}
+
+[profile.dev]
+opt-level = 1      # controls the `--opt-level` the compiler builds with.
+                   # 0-1 is good for debugging. 2 is well-optimized. Max is 3.
+                   # 's' attempts to reduce size, 'z' reduces size even more.
