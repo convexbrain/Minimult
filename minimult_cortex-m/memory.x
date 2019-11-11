@@ -1,4 +1,4 @@
-/* Linker script for the STM32L053R8 */
+/* Linker script for the STM32F103RB */
 MEMORY
 {
   /* NOTE K = KiBi = 1024 bytes */
