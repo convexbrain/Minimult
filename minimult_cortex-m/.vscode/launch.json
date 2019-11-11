@@ -12,7 +12,7 @@
             "cwd": "${workspaceRoot}",
             "valuesFormatting": "parseText",
 
-            "executable": "./target/thumbv7m-none-eabi/debug/examples/usage_outline",
+            "executable": "./target/thumbv7m-none-eabi/debug/examples/usage",
             "remote": true,
             "gdbpath": "C:/Program Files (x86)/GNU Tools ARM Embedded/8 2019-q3-update/bin/arm-none-eabi-gdb.exe",
             "autorun": [
