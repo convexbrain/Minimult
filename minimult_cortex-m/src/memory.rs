@@ -59,6 +59,18 @@ impl<V> MTRawArray<V>
         unsafe { ptr.as_mut().bk_unwrap() }
     }
 
+    pub(crate) fn read<I>(&self, i: I) -> V
+    where I: Into<usize>
+    {
+        let i = i.into();
+        bk_assert!(i < self.len);
+
+        let ptr = self.head;
+        let ptr = unsafe { ptr.add(i) };
+
+        unsafe { ptr.read() }
+    }
+
     pub(crate) fn read_volatile<I>(&self, i: I) -> V
     where I: Into<usize>
     {

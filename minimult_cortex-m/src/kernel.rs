@@ -87,7 +87,7 @@ extern "C" {
 
 static mut O_MTKERNEL: Option<MTKernel> = None;
 
-pub(crate) fn mtkernel_create(tasks: MTRawArray<MTTask>, task_tree_array: MTRawArray<Option<(MTTaskId, MTTaskPri)>>)
+pub(crate) fn mtkernel_create(tasks: MTRawArray<MTTask>, task_tree_array: MTRawArray<(MTTaskId, MTTaskPri)>)
 {
     unsafe {
         O_MTKERNEL = Some(MTKernel::new(tasks, task_tree_array));
@@ -251,7 +251,7 @@ impl MTKernel
 {
     // ----- ----- Main context ----- ----- //
 
-    fn new(tasks: MTRawArray<MTTask>, task_tree_array: MTRawArray<Option<(MTTaskId, MTTaskPri)>>) -> MTKernel
+    fn new(tasks: MTRawArray<MTTask>, task_tree_array: MTRawArray<(MTTaskId, MTTaskPri)>) -> MTKernel
     {
         for i in 0..tasks.len() {
             tasks.write(i,
@@ -265,7 +265,6 @@ impl MTKernel
                     idle_kick_ev: MTEvent::new(0)
                 }
             );
-            task_tree_array.write(i, None);
         }
 
         MTKernel {

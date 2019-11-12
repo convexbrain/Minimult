@@ -27,7 +27,7 @@ impl<'a> Minimult<'a>
     /// * `mem` - reserved memory block.
     /// * `num_tasks` - number of tasks.
     /// * Returns the created instance.
-    /// * (`num_tasks` * (32 + 6)) bytes of the memory block is consumed.
+    /// * (`num_tasks` * (32 + 4)) bytes of the memory block is consumed.
     pub fn new<B>(mem: &mut MTMemBlk<B>, num_tasks: MTTaskId) -> Minimult
     {
         let mut alloc = MTAlloc::new(mem);

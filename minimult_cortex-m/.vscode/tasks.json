@@ -1,0 +1,20 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "QEMU gdb",
+            "type": "process",
+            "command": "C:/NoInstaller/xPack/QEMU ARM/2.8.0-8/bin/qemu-system-gnuarmeclipse.exe",
+            "args": [
+                "-board",
+                "NUCLEO-F103RB",
+                "-semihosting",
+                "-gdb",
+                "tcp::1234"
+            ],
+            "problemMatcher": []
+        }
+    ]
+}

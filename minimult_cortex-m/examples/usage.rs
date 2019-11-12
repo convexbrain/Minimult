@@ -1,41 +1,3 @@
-# minimult_cortex-m
-
-This crate for Rust provides a minimal multitask library `Minimult` for Cortex-M microcontrollers.
-
-## Target
-
-*Single-core* systems of
-
-* Cortex-M0 / M0+ / M1  (`thumbv6m-none-eabi`)
-* Cortex-M3  (`thumbv7m-none-eabi`)
-* Cortex-M4 / M7  (`thumbv7em-none-eabi`) with FPU  (`thumbv7em-none-eabihf`)
-* Cortex-M23  (`thumbv8m.base-none-eabi`)
-* Cortex-M33 / M35P  (`thumbv8m.main-none-eabi`) with FPU  (`thumbv8m.main-none-eabihf`)
-
-## Features
-
-* Task like that of a typical RTOS
-  * `Minimult` can take closures and register them as tasks.
-  * `Minimult` runs into a loop to start dispatching those tasks.
-    * *Not supported: dynamically creating and spawning.*
-* Synchronization
-  * `idle` and `kick`
-    * A task goes into an idle state and other tasks/interrupts wake it up by kicking.
-  * `MTMsgSender` and `MTMsgReceiver`
-    * Task-to-task communication by message passing.
-  * `MTSharedCh`
-    * Shared variable among tasks.
-* Priority-based dispatching
-  * A higher priority task preempts lower priority tasks.
-  * Round-robin dispatching within the same priority tasks.
-  * `dispatch` can be directly requested so that timer-based preemption is also possible.
-* Static memory allocation
-  * `Minimult` doesn't require a global allocator but reserves a bunch of memory block in advance.
-
-## Examples
-### Usage
-
-```rust
 // Runnable on QEMU ARM
 
 #![no_main]
@@ -123,9 +85,3 @@ fn task2(shch: MTSharedCh<u32>)
     hprintln!("task2 exit").unwrap();
     debug::exit(debug::EXIT_SUCCESS);
 }
-```
-
-### Other Examples
-
-You can find a specific board's example [here](https://github.com/convexbrain/Minimult/tree/master/examples/).
-Currently there are very few examples, however.
