@@ -96,14 +96,14 @@ version = "0.1.0"
 dependencies = [
  "cortex-m 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "cortex-m-rt 0.6.10 (registry+https://github.com/rust-lang/crates.io-index)",
- "minimult_cortex-m 0.3.1",
+ "minimult_cortex-m 0.3.2",
  "panic-semihosting 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "stm32f7xx-hal 0.1.0 (git+https://github.com/stm32-rs/stm32f7xx-hal?rev=616b6152476f5e6702755fc2e5180cb3a88b1fa2)",
 ]
 
 [[package]]
 name = "minimult_cortex-m"
-version = "0.3.1"
+version = "0.3.2"
 dependencies = [
  "cortex-m 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "num-integer 0.1.41 (registry+https://github.com/rust-lang/crates.io-index)",
