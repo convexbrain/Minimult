@@ -61,11 +61,11 @@ fn main() -> ! {
     let cnt1 = CLOCK / 4;
     let div1 = 4;
 
-    /* using message queue
-     */
+    // message queue
     let mut q = mt.msgq::<Toggle>(4);
     let (snd, rcv) = q.ch();
 
+    // shared message sender
     let s_snd = mt.share(snd);
     let sc_snd0 = s_snd.ch();
     let sc_snd1 = s_snd.ch();
