@@ -38,6 +38,15 @@ fn main() -> !
     syst.enable_counter();
     syst.enable_interrupt();
 
+    // must be error in terms of lifetime and ownership
+    //drop(mem);
+    //drop(q);
+    //drop(snd);
+    //drop(rcv);
+    //drop(sh);
+    //drop(shch1);
+    //drop(shch2);
+    
     hprintln!("Minimult run").unwrap();
     mt.run()
 }

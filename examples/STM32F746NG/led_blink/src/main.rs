@@ -77,15 +77,6 @@ fn main() -> ! {
     mt.register(1, 1, 256, || _led_tim1(systcnt, sc_snd1, cnt1, div1));
     mt.register(2, 2, 256, || _led_tgl(pi1, rcv)); // blink and pause
 
-    {   // must be error in terms of lifetime
-        //core::mem::drop(mem);
-        //core::mem::drop(q);
-        //core::mem::drop(s_snd);
-        //core::mem::drop(sc_snd0);
-        //core::mem::drop(sc_snd1);
-        //core::mem::drop(rcv);
-    }
-    
     // ----- ----- ----- ----- -----
 
     mt.run()
