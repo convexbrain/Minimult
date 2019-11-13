@@ -1,0 +1,44 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "cortex-debug",
+            "request": "launch",
+            "name": "Debug (J-Link)",
+
+            "servertype": "jlink",
+            "cwd": "${workspaceRoot}",
+            "device": "nRF9160",
+            "executable": "./target/thumbv8m.main-none-eabi/debug/led_blink",
+
+            "interface": "swd",
+            "ipAddress": null,
+            "serialNumber": null,
+
+            "svdFile": "../nRF_MDK_8_29_0_GCC_BSDLicense/nrf9160.svd",
+
+            "runToMain": true
+        },
+        {
+            "type": "cortex-debug",
+            "request": "launch",
+            "name": "Release (J-Link)",
+
+            "servertype": "jlink",
+            "cwd": "${workspaceRoot}",
+            "device": "nRF9160",
+            "executable": "./target/thumbv8m.main-none-eabi/release/led_blink",
+
+            "interface": "swd",
+            "ipAddress": null,
+            "serialNumber": null,
+
+            "svdFile": "../nRF_MDK_8_29_0_GCC_BSDLicense/nrf9160.svd",
+
+            "runToMain": false
+        }
+    ]
+}
