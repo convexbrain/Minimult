@@ -31,8 +31,8 @@ fn main() -> ! {
     // ----- ----- ----- ----- -----
 
     let p0 = peri.P0_S;
-    p0.outclr.write(|w| w.pin7().set_bit());
-    p0.pin_cnf[7].write(|w| w
+    p0.outclr.write(|w| w.pin29().set_bit());
+    p0.pin_cnf[29].write(|w| w
         .dir().output()
         .input().disconnect()
         .pull().disabled()
@@ -98,16 +98,16 @@ fn _led_tgl(p0: P0_S, mut rcv: MTMsgReceiver<Toggle>)
 
     loop {
         for _ in 0..tgl.1 {
-            p0.outset.write(|w| w.pin7().set_bit());
+            p0.outset.write(|w| w.pin29().set_bit());
 
             asm::delay(tgl.0 / 4 / tgl.1);
 
-            p0.outclr.write(|w| w.pin7().set_bit());
+            p0.outclr.write(|w| w.pin29().set_bit());
 
             asm::delay(tgl.0 / 4 / tgl.1);
         }
 
-        p0.outclr.write(|w| w.pin7().set_bit());
+        p0.outclr.write(|w| w.pin29().set_bit());
 
         asm::delay(tgl.0 / 2);
 
