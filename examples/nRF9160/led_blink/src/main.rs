@@ -4,11 +4,9 @@
 use cortex_m::asm;
 use cortex_m::peripheral::NVIC;
 use cortex_m::Peripherals;
-
 use cortex_m_rt::entry;
 use cortex_m_rt::exception;
-
-extern crate panic_semihosting;
+use panic_semihosting as _;
 
 use nrf91::{
     P0_S, TIMER0_S,
