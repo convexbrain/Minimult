@@ -11,6 +11,8 @@ cortex-m = "0.6.1"
 cortex-m-rt = "0.6.10"
 panic-semihosting = "0.5.3"
 minimult_cortex-m = {path = "../../../minimult_cortex-m"}
+nrf9160_pca20035 = {git = "https://github.com/convexbrain/fw-nrfconnect-nrf", branch = "feature_rust"}
+#nrf9160_pca20035 = {path = "../../../../fw-nrfconnect-nrf/rust/nrf9160_pca20035"}
 
 [dependencies.nrf91]
 version = "0.1.1"

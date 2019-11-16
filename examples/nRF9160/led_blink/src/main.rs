@@ -11,6 +11,7 @@ use panic_semihosting as _;
 use nrf91::{
     P0_S, TIMER0_S,
     interrupt, Interrupt};
+use nrf9160_pca20035::power_mgmt_init;
 
 use minimult_cortex_m::*;
 
@@ -21,7 +22,9 @@ struct Toggle(u32, u32);
 
 #[entry]
 fn main() -> ! {
-    let peri = nrf91::Peripherals::take().unwrap();
+    let mut peri = nrf91::Peripherals::take().unwrap();
+
+    peri.TWIM2_S = power_mgmt_init(peri.TWIM2_S);
 
     // ----- ----- ----- ----- -----
 
@@ -89,7 +92,7 @@ fn main() -> ! {
 
     // ----- ----- ----- ----- -----
 
-    mt.run()
+    mt.run() // NOTE: inside WFI may block SysTick in some cases
 }
 
 fn _led_tgl(p0: P0_S, mut rcv: MTMsgReceiver<Toggle>)
