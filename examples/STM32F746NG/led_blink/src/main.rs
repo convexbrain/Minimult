@@ -77,7 +77,7 @@ fn main() -> ! {
 
     // ----- ----- ----- ----- -----
 
-    mt.run()
+    mt.run() // NOTE: inside WFI may block SysTick in some cases
 }
 
 fn _led_tgl(mut pi1: gpioi::PI1<Output<PushPull>>, mut rcv: MTMsgReceiver<Toggle>)
