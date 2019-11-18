@@ -24,6 +24,7 @@ struct Toggle(u32, u32);
 fn main() -> ! {
     let mut peri = nrf91::Peripherals::take().unwrap();
 
+    cortex_m::asm::delay(1_000_000); // NOTE: wait to avoid that i2c gets stuck
     peri.TWIM2_S = power_mgmt_init(peri.TWIM2_S);
 
     // ----- ----- ----- ----- -----
