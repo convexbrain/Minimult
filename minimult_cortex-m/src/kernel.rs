@@ -25,24 +25,24 @@ sp+
 */
 
 #[no_mangle]
-extern fn minimult_save_sp(curr_sp: *mut usize) -> *mut usize
+extern "C" fn minimult_save_sp(curr_sp: *mut usize, curr_splim: *mut usize) -> (*mut usize, *mut usize)
 {
     if let Some(tm) = mtkernel_get_mut() {
-        tm.save_sp(curr_sp)
+        tm.save_sp(curr_sp, curr_splim)
     }
     else {
-        curr_sp
+        (curr_sp, curr_splim)
     }
 }
 
 #[no_mangle]
-extern fn minimult_task_switch(sp: *mut usize) -> *mut usize
+extern "C" fn minimult_task_switch(sp: *mut usize, splim: *mut usize) -> (*mut usize, *mut usize)
 {
     if let Some(tm) = mtkernel_get_mut() {
         tm.task_switch()
     }
     else {
-        sp
+        (sp, splim)
     }
 }
 
@@ -244,6 +244,7 @@ pub(crate) struct MTKernel
     //
     is_set: bool,
     sp_loops: *mut usize,
+    splim_loops: *mut usize,
     tid: Option<MTTaskId>
 }
 
@@ -272,6 +273,7 @@ impl MTKernel
             task_tree: MTBHeapDList::new(task_tree_array),
             is_set: false,
             sp_loops: core::ptr::null_mut(),
+            splim_loops: core::ptr::null_mut(),
             tid: None
         }
     }
@@ -343,7 +345,7 @@ impl MTKernel
 
     // ----- ----- Interrupt context ----- ----- //
 
-    fn save_sp(&mut self, curr_sp: *mut usize) -> *mut usize
+    fn save_sp(&mut self, curr_sp: *mut usize, curr_splim: *mut usize) -> (*mut usize, *mut usize)
     {
         // check and save current sp
 
@@ -355,12 +357,13 @@ impl MTKernel
         }
         else {
             self.sp_loops = curr_sp;
+            self.splim_loops = curr_splim;
         }
 
-        self.sp_loops // use sp_loops until switching task
+        (self.sp_loops, self.splim_loops) // use sp[lim]_loops until switching task
     }
 
-    fn task_switch(&mut self) -> *mut usize
+    fn task_switch(&mut self) -> (*mut usize, *mut usize)
     {
         // clear service call request
 
@@ -416,16 +419,16 @@ impl MTKernel
 
         // find highest priority Ready task
 
-        let (next_tid, next_sp) = if let Some(tid) = self.task_tree.bheap_h() {
-            (Some(tid), self.tasks.refer(tid).sp)
+        let (next_tid, next_sp, next_splim) = if let Some(tid) = self.task_tree.bheap_h() {
+            (Some(tid), self.tasks.refer(tid).sp, self.tasks.refer(tid).sp_start)
         }
         else {
-            (None, self.sp_loops)
+            (None, self.sp_loops, self.splim_loops)
         };
 
         self.tid = next_tid;
 
-        next_sp
+        (next_sp, next_splim)
     }
 
     // ----- ----- Task context ----- ----- //
