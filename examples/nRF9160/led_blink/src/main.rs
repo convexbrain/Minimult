@@ -93,7 +93,7 @@ fn main() -> ! {
 
     // ----- ----- ----- ----- -----
 
-    mt.run() // NOTE: inside WFI may block SysTick in some cases
+    mt.run()
 }
 
 fn _led_tgl(p0: P0_S, mut rcv: MTMsgReceiver<Toggle>)
