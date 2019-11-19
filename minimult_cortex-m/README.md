@@ -121,10 +121,10 @@ fn task2(shch: MTSharedCh<u32>)
 {
     let mut j = 0;
 
-    while j < 5 {
+    while j < 50 {
         let vlook = shch.look();
 
-        assert!((j == *vlook) || (j + 1 == *vlook));
+        assert!(j <= *vlook);
         //hprintln!("task2 look {}", *vlook).unwrap(); // many lines printed
         j = *vlook;
     }
