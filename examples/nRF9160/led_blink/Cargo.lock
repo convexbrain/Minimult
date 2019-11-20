@@ -82,7 +82,7 @@ version = "0.1.0"
 dependencies = [
  "cortex-m 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "cortex-m-rt 0.6.10 (registry+https://github.com/rust-lang/crates.io-index)",
- "minimult_cortex-m 0.3.2",
+ "minimult_cortex-m 0.3.3",
  "nrf91 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "nrf9160_pca20035 0.1.0 (git+https://github.com/convexbrain/fw-nrfconnect-nrf?branch=feature_rust)",
  "panic-semihosting 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -90,7 +90,7 @@ dependencies = [
 
 [[package]]
 name = "minimult_cortex-m"
-version = "0.3.2"
+version = "0.3.3"
 dependencies = [
  "cortex-m 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "num-integer 0.1.41 (registry+https://github.com/rust-lang/crates.io-index)",

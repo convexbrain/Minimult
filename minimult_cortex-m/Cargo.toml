@@ -1,6 +1,6 @@
 [package]
 name = "minimult_cortex-m"
-version = "0.3.2"
+version = "0.3.3"
 authors = ["convexbrain <convexbrain@gmail.com>"]
 edition = "2018"
 
