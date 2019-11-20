@@ -8,9 +8,10 @@ use cortex_m_rt::entry;
 use cortex_m_rt::exception;
 use panic_semihosting as _;
 
-use nrf52840_pac::{
-    P0, TIMER0,
+use nrf91::{
+    P0_S, TIMER0_S,
     interrupt, Interrupt};
+use nrf9160_pca20035::power_mgmt_init;
 
 use minimult_cortex_m::*;
 
@@ -21,7 +22,10 @@ struct Toggle(u32, u32);
 
 #[entry]
 fn main() -> ! {
-    let peri = nrf52840_pac::Peripherals::take().unwrap();
+    let mut peri = nrf91::Peripherals::take().unwrap();
+
+    cortex_m::asm::delay(1_000_000); // NOTE: wait to avoid that i2c gets stuck
+    peri.TWIM2_S = power_mgmt_init(peri.TWIM2_S);
 
     // ----- ----- ----- ----- -----
 
@@ -30,9 +34,9 @@ fn main() -> ! {
 
     // ----- ----- ----- ----- -----
 
-    let p0 = peri.P0;
-    p0.outclr.write(|w| w.pin7().set_bit());
-    p0.pin_cnf[7].write(|w| w
+    let p0 = peri.P0_S;
+    p0.outclr.write(|w| w.pin29().set_bit());
+    p0.pin_cnf[29].write(|w| w
         .dir().output()
         .input().disconnect()
         .pull().disabled()
@@ -41,7 +45,7 @@ fn main() -> ! {
 
     // ----- ----- ----- ----- -----
 
-    let timer0 = peri.TIMER0;
+    let timer0 = peri.TIMER0_S;
     timer0.shorts.write(|w| w
         .compare0_clear().enabled()
         .compare0_stop().disabled());
@@ -92,22 +96,22 @@ fn main() -> ! {
     mt.run()
 }
 
-fn _led_tgl(p0: P0, mut rcv: MTMsgReceiver<Toggle>)
+fn _led_tgl(p0: P0_S, mut rcv: MTMsgReceiver<Toggle>)
 {
     let mut tgl = Toggle(CLOCK / 16, 1);
 
     loop {
         for _ in 0..tgl.1 {
-            p0.outset.write(|w| w.pin7().set_bit());
+            p0.outset.write(|w| w.pin29().set_bit());
 
             asm::delay(tgl.0 / 4 / tgl.1);
 
-            p0.outclr.write(|w| w.pin7().set_bit());
+            p0.outclr.write(|w| w.pin29().set_bit());
 
             asm::delay(tgl.0 / 4 / tgl.1);
         }
 
-        p0.outclr.write(|w| w.pin7().set_bit());
+        p0.outclr.write(|w| w.pin29().set_bit());
 
         asm::delay(tgl.0 / 2);
 
@@ -115,7 +119,7 @@ fn _led_tgl(p0: P0, mut rcv: MTMsgReceiver<Toggle>)
     }
 }
 
-fn _led_tim0(timer0: TIMER0, sc_snd: MTSharedCh<MTMsgSender<Toggle>>, cnt: u32, div: u32)
+fn _led_tim0(timer0: TIMER0_S, sc_snd: MTSharedCh<MTMsgSender<Toggle>>, cnt: u32, div: u32)
 {
     loop {
         Minimult::idle();

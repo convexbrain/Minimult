@@ -8,7 +8,7 @@ use cortex_m_rt::entry;
 use cortex_m_rt::exception;
 use cortex_m_semihosting::debug;
 use cortex_m_semihosting::hprintln;
-extern crate panic_semihosting;
+use panic_semihosting as _;
 
 use minimult_cortex_m::*;
 
@@ -38,6 +38,15 @@ fn main() -> !
     syst.enable_counter();
     syst.enable_interrupt();
 
+    // must be error in terms of lifetime and ownership
+    //drop(mem);
+    //drop(q);
+    //drop(snd);
+    //drop(rcv);
+    //drop(sh);
+    //drop(shch1);
+    //drop(shch2);
+    
     hprintln!("Minimult run").unwrap();
     mt.run()
 }
@@ -74,10 +83,10 @@ fn task2(shch: MTSharedCh<u32>)
 {
     let mut j = 0;
 
-    while j < 5 {
+    while j < 50 {
         let vlook = shch.look();
 
-        assert!((j == *vlook) || (j + 1 == *vlook));
+        assert!(j <= *vlook);
         //hprintln!("task2 look {}", *vlook).unwrap(); // many lines printed
         j = *vlook;
     }

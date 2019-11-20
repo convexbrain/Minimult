@@ -63,6 +63,8 @@ impl<'a> Minimult<'a>
     /// * `tid` - task identifier. `0` to `num_tasks - 1`.
     /// * `pri` - task priority. The lower value is the higher priority.
     /// * `stack_len` - length of a stack used by the task.
+    ///   * `Minimult` kernel performs stack checks when task-switching.
+    ///     If a target is `thumbv8m.*`, `MSPLIM` stack limit check is also enabled.
     /// * `task: T` - task closure.
     /// * (`stack_len` * size of `usize`) bytes of the memory block is consumed.
     pub fn register<T>(&mut self, tid: MTTaskId, pri: MTTaskPri, stack_len: usize, task: T)
@@ -77,6 +79,8 @@ impl<'a> Minimult<'a>
 
     /// Runs into a loop to dispatch the registered tasks.
     /// * Never returns.
+    /// * *NOTE: Enters a WFI loop when there is no ready task.
+    ///   As a result some systems may get into a low power state and block SysTick and other core peripherals.*
     pub fn run(self) -> !
     {
         let tm = mtkernel_get_mut().bk_unwrap();

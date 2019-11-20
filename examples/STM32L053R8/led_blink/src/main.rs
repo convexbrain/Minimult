@@ -4,11 +4,9 @@
 use cortex_m::asm;
 use cortex_m::peripheral::NVIC;
 use cortex_m::Peripherals;
-
 use cortex_m_rt::entry;
 use cortex_m_rt::exception;
-
-extern crate panic_semihosting;
+use panic_semihosting as _;
 
 use stm32l0xx_hal::{
     pac::{self, interrupt, Interrupt},
@@ -61,11 +59,11 @@ fn main() -> ! {
     let cnt1 = CLOCK / 4;
     let div1 = 4;
 
-    /* using message queue
-     */
+    // message queue
     let mut q = mt.msgq::<Toggle>(4);
     let (snd, rcv) = q.ch();
 
+    // shared message sender
     let s_snd = mt.share(snd);
     let sc_snd0 = s_snd.ch();
     let sc_snd1 = s_snd.ch();
@@ -74,15 +72,6 @@ fn main() -> ! {
     mt.register(1, 1, 256, || _led_tim1(systcnt, sc_snd1, cnt1, div1));
     mt.register(2, 2, 256, || _led_tgl(pa5, rcv)); // blink and pause
 
-    {   // must be error in terms of lifetime
-        //core::mem::drop(mem);
-        //core::mem::drop(q);
-        //core::mem::drop(s_snd);
-        //core::mem::drop(sc_snd0);
-        //core::mem::drop(sc_snd1);
-        //core::mem::drop(rcv);
-    }
-    
     // ----- ----- ----- ----- -----
 
     mt.run()

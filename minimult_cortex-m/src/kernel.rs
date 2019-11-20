@@ -1,4 +1,5 @@
 use core::mem::{size_of, align_of, transmute};
+use core::ptr::null_mut;
 
 use crate::{MTTaskId, MTTaskPri};
 use crate::memory::MTRawArray;
@@ -24,25 +25,53 @@ sp+
                     ^ 8-byte aligned here
 */
 
-#[no_mangle]
-extern fn minimult_save_sp(curr_sp: *mut usize) -> *mut usize
+#[repr(C)]
+struct MTAsmArgRet
 {
+    sp: *mut usize,
+    splim: *mut usize
+}
+
+static mut ARG_RET: MTAsmArgRet = MTAsmArgRet {
+    sp: null_mut(),
+    splim: null_mut()
+};
+
+#[no_mangle]
+extern "C" fn minimult_arg_ret() -> *mut usize
+{
+    let ptr = unsafe { &mut ARG_RET };
+    let ptr = ptr as *mut MTAsmArgRet;
+    ptr as *mut usize
+}
+
+#[no_mangle]
+extern "C" fn minimult_save_sp()
+{
+    let (curr_sp, curr_splim) = unsafe {
+        (ARG_RET.sp, ARG_RET.splim)
+    };
+
     if let Some(tm) = mtkernel_get_mut() {
-        tm.save_sp(curr_sp)
-    }
-    else {
-        curr_sp
+        let (sp_loop, splim_loop) = tm.save_sp(curr_sp, curr_splim);
+
+        unsafe {
+            ARG_RET.sp = sp_loop;
+            ARG_RET.splim = splim_loop;
+        }
     }
 }
 
 #[no_mangle]
-extern fn minimult_task_switch(sp: *mut usize) -> *mut usize
+extern "C" fn minimult_task_switch()
 {
     if let Some(tm) = mtkernel_get_mut() {
-        tm.task_switch()
-    }
-    else {
-        sp
+        let (sp, splim) = tm.task_switch();
+
+        unsafe {
+            ARG_RET.sp = sp;
+            ARG_RET.splim = splim;
+        }
     }
 }
 
@@ -244,6 +273,7 @@ pub(crate) struct MTKernel
     //
     is_set: bool,
     sp_loops: *mut usize,
+    splim_loops: *mut usize,
     tid: Option<MTTaskId>
 }
 
@@ -256,11 +286,11 @@ impl MTKernel
         for i in 0..tasks.len() {
             tasks.write(i,
                 MTTask {
-                    sp_start: core::ptr::null_mut(),
-                    sp_end: core::ptr::null_mut(),
-                    sp: core::ptr::null_mut(),
+                    sp_start: null_mut(),
+                    sp_end: null_mut(),
+                    sp: null_mut(),
                     state: MTState::None,
-                    wait_ev: core::ptr::null_mut(),
+                    wait_ev: null_mut(),
                     wait_evcond: MTEventCond::None,
                     idle_kick_ev: MTEvent::new(0)
                 }
@@ -271,7 +301,8 @@ impl MTKernel
             tasks,
             task_tree: MTBHeapDList::new(task_tree_array),
             is_set: false,
-            sp_loops: core::ptr::null_mut(),
+            sp_loops: null_mut(),
+            splim_loops: null_mut(),
             tid: None
         }
     }
@@ -343,7 +374,7 @@ impl MTKernel
 
     // ----- ----- Interrupt context ----- ----- //
 
-    fn save_sp(&mut self, curr_sp: *mut usize) -> *mut usize
+    fn save_sp(&mut self, curr_sp: *mut usize, curr_splim: *mut usize) -> (*mut usize, *mut usize)
     {
         // check and save current sp
 
@@ -355,12 +386,13 @@ impl MTKernel
         }
         else {
             self.sp_loops = curr_sp;
+            self.splim_loops = curr_splim;
         }
 
-        self.sp_loops // use sp_loops until switching task
+        (self.sp_loops, self.splim_loops) // use sp[lim]_loops until switching task
     }
 
-    fn task_switch(&mut self) -> *mut usize
+    fn task_switch(&mut self) -> (*mut usize, *mut usize)
     {
         // clear service call request
 
@@ -416,16 +448,16 @@ impl MTKernel
 
         // find highest priority Ready task
 
-        let (next_tid, next_sp) = if let Some(tid) = self.task_tree.bheap_h() {
-            (Some(tid), self.tasks.refer(tid).sp)
+        let (next_tid, next_sp, next_splim) = if let Some(tid) = self.task_tree.bheap_h() {
+            (Some(tid), self.tasks.refer(tid).sp, self.tasks.refer(tid).sp_start)
         }
         else {
-            (None, self.sp_loops)
+            (None, self.sp_loops, self.splim_loops)
         };
 
         self.tid = next_tid;
 
-        next_sp
+        (next_sp, next_splim)
     }
 
     // ----- ----- Task context ----- ----- //

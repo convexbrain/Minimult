@@ -16,11 +16,36 @@ PendSV:
     mov     r7, r11
     push    {r4, r5, r6, r7}
 
-    mov     r0, sp
+    mov     r4, sp
+.ifdef V8
+    mrs     r5, msplim
+.else
+    mov     r5, #0
+.endif
+
+    bl      minimult_arg_ret
+    mov     r7, r0
+
+    str     r4, [r7]
+    str     r5, [r7, #4]
+
     bl      minimult_save_sp
-    mov     sp, r0
+
+.ifdef V8
+    ldr     r5, [r7, #4]
+    msr     msplim, r5
+.endif
+    ldr     r4, [r7]
+    mov     sp, r4
+
     bl      minimult_task_switch
-    mov     sp, r0
+
+    ldr     r4, [r7]
+    mov     sp, r4
+.ifdef V8
+    ldr     r5, [r7, #4]
+    msr     msplim, r5
+.endif
 
     pop     {r4, r5, r6, r7}
     mov     r8, r4
