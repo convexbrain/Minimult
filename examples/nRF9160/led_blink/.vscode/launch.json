@@ -12,7 +12,7 @@
             "servertype": "jlink",
             "cwd": "${workspaceRoot}",
             "device": "nRF9160",
-            "executable": "./target/thumbv8m.main-none-eabi/debug/led_blink",
+            "executable": "./target/thumbv8m.main-none-eabihf/debug/led_blink",
 
             "interface": "swd",
             "ipAddress": null,
@@ -30,7 +30,7 @@
             "servertype": "jlink",
             "cwd": "${workspaceRoot}",
             "device": "nRF9160",
-            "executable": "./target/thumbv8m.main-none-eabi/release/led_blink",
+            "executable": "./target/thumbv8m.main-none-eabihf/release/led_blink",
 
             "interface": "swd",
             "ipAddress": null,

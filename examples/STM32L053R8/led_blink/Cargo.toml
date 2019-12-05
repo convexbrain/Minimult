@@ -8,7 +8,7 @@ edition = "2018"
 
 [dependencies]
 cortex-m = "0.6.1"
-cortex-m-rt = "0.6.10"
+cortex-m-rt = "0.6.11"
 panic-semihosting = "0.5.3"
 minimult_cortex-m = {path = "../../../minimult_cortex-m"}
 
