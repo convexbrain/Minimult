@@ -21,14 +21,14 @@ license = "Unlicense"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-cortex-m = "0.6.1"
+cortex-m = "0.6.2"
 
 [dependencies.num-integer]
-version = "0.1.41"
+version = "0.1.42"
 default-features = false
 
 [dev-dependencies]
-cortex-m-rt = "0.6.11"
+cortex-m-rt = "0.6.12"
 cortex-m-semihosting = "0.3.5"
 panic-semihosting = {version = "0.5.3", features = ["exit"]}
 
